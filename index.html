@@ -121,8 +121,8 @@
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(15, 23, 42, 0.55);
-      backdrop-filter: blur(3px);
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
       display: none;
       align-items: flex-end;
       justify-content: center;
@@ -131,17 +131,37 @@
     .modal-sheet {
       background: var(--surface);
       width: 100%;
-      max-width: 500px;
+      max-width: 540px;
       border-radius: 20px 20px 0 0;
       padding: 20px 20px 28px 20px;
-      box-shadow: 0 -4px 24px rgba(0,0,0,0.18);
-      animation: slideUp 0.25s ease-out;
+      box-shadow: 0 -4px 24px rgba(0,0,0,0.2);
+      animation: slideUp 0.22s ease-out;
+      max-height: 90vh;
+      overflow-y: auto;
     }
     @keyframes slideUp {
       from { transform: translateY(100%); }
       to { transform: translateY(0); }
     }
-    .modal-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 16px; color: var(--text); }
+    .modal-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .modal-title { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+    .btn-back {
+      background: none;
+      border: none;
+      color: var(--primary);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 0;
+    }
     .action-option {
       display: flex;
       align-items: center;
@@ -161,13 +181,13 @@
     }
     .action-option:active { background: #f1f5f9; }
     .action-icon {
-      width: 40px;
-      height: 40px;
+      width: 42px;
+      height: 42px;
       border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.25rem;
+      font-size: 1.3rem;
     }
     .modal-cancel {
       width: 100%;
@@ -234,51 +254,10 @@
     </div>
   </div>
 
-  <!-- ================= TAB: FUEL ================= -->
+  <!-- ================= TAB: FUEL HISTORY ================= -->
   <div id="tab-fuel" class="tab-content" style="display:none;">
-    <div class="card">
-      <div class="card-title">Log Fuel Fill-Up</div>
-      
-      <div class="form-row">
-        <div class="form-group">
-          <label>Date</label>
-          <input type="date" id="fuelDate">
-        </div>
-        <div class="form-group">
-          <label>Odometer (km)</label>
-          <input type="number" id="fuelOdo" placeholder="e.g. 2643">
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label>Quantity (Litres)</label>
-          <input type="number" step="0.01" id="fuelQty" placeholder="e.g. 10.50" oninput="calculateFuelPrice('qty')">
-        </div>
-        <div class="form-group">
-          <label>Price / Litre (₹)</label>
-          <input type="number" step="0.01" id="fuelPriceUnit" placeholder="e.g. 102.80" oninput="calculateFuelPrice('unit')">
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>Total Cost (₹)</label>
-        <input type="number" step="0.01" id="fuelTotalCost" placeholder="e.g. 1080.00" oninput="calculateFuelPrice('total')">
-      </div>
-
-      <div class="toggle-container">
-        <span class="toggle-label">Full Tank Fill-up</span>
-        <label class="switch">
-          <input type="checkbox" id="fuelFullTank">
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <button class="btn-submit" onclick="addFuelRecord()">Save Fuel Entry</button>
-    </div>
-
     <div class="controls-bar">
-      <span>Fuel History</span>
+      <span>Fuel Logs</span>
       <select class="sort-select" id="fuelSort" onchange="renderFuelList()">
         <option value="date-desc">Date (Newest First)</option>
         <option value="date-asc">Date (Oldest First)</option>
@@ -290,37 +269,10 @@
     <div id="fuelHistoryList"></div>
   </div>
 
-  <!-- ================= TAB: SERVICE ================= -->
+  <!-- ================= TAB: SERVICE HISTORY ================= -->
   <div id="tab-service" class="tab-content" style="display:none;">
-    <div class="card">
-      <div class="card-title">Log Service & Maintenance</div>
-      
-      <div class="form-row">
-        <div class="form-group">
-          <label>Date</label>
-          <input type="date" id="servDate">
-        </div>
-        <div class="form-group">
-          <label>Odometer (km)</label>
-          <input type="number" id="servOdo" placeholder="e.g. 3000">
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>Service Cost (₹)</label>
-        <input type="number" step="0.01" id="servCost" placeholder="e.g. 1650.00">
-      </div>
-
-      <div class="form-group">
-        <label>Work Done / Notes</label>
-        <textarea id="servNotes" rows="2" placeholder="e.g. Oil change, chain maintenance, general inspection"></textarea>
-      </div>
-
-      <button class="btn-submit warning" onclick="addServiceRecord()">Save Service Entry</button>
-    </div>
-
     <div class="controls-bar">
-      <span>Service History</span>
+      <span>Service Records</span>
       <select class="sort-select" id="servSort" onchange="renderServiceList()">
         <option value="date-desc">Date (Newest First)</option>
         <option value="date-asc">Date (Oldest First)</option>
@@ -332,45 +284,10 @@
     <div id="serviceHistoryList"></div>
   </div>
 
-  <!-- ================= TAB: EXPENSES ================= -->
+  <!-- ================= TAB: EXPENSES HISTORY ================= -->
   <div id="tab-expense" class="tab-content" style="display:none;">
-    <div class="card">
-      <div class="card-title">Log General Expense</div>
-      
-      <div class="form-row">
-        <div class="form-group">
-          <label>Date</label>
-          <input type="date" id="expDate">
-        </div>
-        <div class="form-group">
-          <label>Category</label>
-          <select id="expCategory">
-            <option value="Parking">Parking</option>
-            <option value="Toll">Toll</option>
-            <option value="Wash & Clean">Wash & Detailing</option>
-            <option value="Accessories">Accessories</option>
-            <option value="Challan">Challan / Fine</option>
-            <option value="Repairs">Repairs & Parts</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>Amount (₹)</label>
-        <input type="number" step="0.01" id="expCost" placeholder="e.g. 150.00">
-      </div>
-
-      <div class="form-group">
-        <label>Notes / Remarks</label>
-        <input type="text" id="expNotes" placeholder="e.g. MCD Parking ticket or Microfiber cloth">
-      </div>
-
-      <button class="btn-submit purple" onclick="addExpenseRecord()">Save Expense Entry</button>
-    </div>
-
     <div class="controls-bar">
-      <span>Expense History</span>
+      <span>General Expenses</span>
       <select class="sort-select" id="expSort" onchange="renderExpenseList()">
         <option value="date-desc">Date (Newest First)</option>
         <option value="date-asc">Date (Oldest First)</option>
@@ -382,38 +299,166 @@
   </div>
 
   <!-- Floating Action Button (+) -->
-  <button class="fab-btn" onclick="openLogModal()" title="Add New Log">+</button>
+  <button class="fab-btn" onclick="openLogModal()" title="Add New Entry">+</button>
 
-  <!-- Modal / Bottom Sheet -->
+  <!-- ================= POPUP MODAL (ALL FORMS INSIDE POPUP) ================= -->
   <div id="logModalOverlay" class="modal-overlay" onclick="closeLogModal(event)">
     <div class="modal-sheet" onclick="event.stopPropagation()">
-      <div class="modal-title">What would you like to log?</div>
       
-      <button class="action-option" onclick="selectLogOption('fuel')">
-        <div class="action-icon" style="background: #eff6ff; color: var(--primary);">⛽</div>
-        <div>
-          <div>Fuel Fill-Up</div>
-          <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Log litres, price, odometer reading</div>
+      <!-- VIEW 1: CATEGORY SELECTION -->
+      <div id="modalSelectView">
+        <div class="modal-header-row">
+          <div class="modal-title">Log New Entry</div>
         </div>
-      </button>
+        
+        <button class="action-option" onclick="showInlineForm('fuel')">
+          <div class="action-icon" style="background: #eff6ff; color: var(--primary);">⛽</div>
+          <div>
+            <div>Fuel Fill-Up</div>
+            <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Litres, price per litre, odometer</div>
+          </div>
+        </button>
 
-      <button class="action-option" onclick="selectLogOption('service')">
-        <div class="action-icon" style="background: #fef3c7; color: var(--warning);">🔧</div>
-        <div>
-          <div>Service & Maintenance</div>
-          <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Log service cost, odometer & notes</div>
+        <button class="action-option" onclick="showInlineForm('service')">
+          <div class="action-icon" style="background: #fef3c7; color: var(--warning);">🔧</div>
+          <div>
+            <div>Service & Maintenance</div>
+            <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Cost, odometer, work done notes</div>
+          </div>
+        </button>
+
+        <button class="action-option" onclick="showInlineForm('expense')">
+          <div class="action-icon" style="background: #f3e8ff; color: var(--purple);">💳</div>
+          <div>
+            <div>General Expense</div>
+            <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Parking, Toll, Wash, Accessories, etc.</div>
+          </div>
+        </button>
+
+        <button class="modal-cancel" onclick="closeLogModal()">Cancel</button>
+      </div>
+
+      <!-- VIEW 2: FUEL FORM INSIDE POPUP -->
+      <div id="modalFuelForm" style="display:none;">
+        <div class="modal-header-row">
+          <button class="btn-back" onclick="backToModalSelect()">← Back</button>
+          <div class="modal-title" style="font-size:1rem;">⛽ Fuel Fill-Up</div>
+          <span style="width:40px;"></span>
         </div>
-      </button>
 
-      <button class="action-option" onclick="selectLogOption('expense')">
-        <div class="action-icon" style="background: #f3e8ff; color: var(--purple);">💳</div>
-        <div>
-          <div>General Expense</div>
-          <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Toll, Parking, Wash, Accessories, etc.</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="fuelDate">
+          </div>
+          <div class="form-group">
+            <label>Odometer (km)</label>
+            <input type="number" id="fuelOdo" placeholder="e.g. 2643">
+          </div>
         </div>
-      </button>
 
-      <button class="modal-cancel" onclick="closeLogModal()">Cancel</button>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Quantity (Litres)</label>
+            <input type="number" step="0.01" id="fuelQty" placeholder="e.g. 10.50" oninput="calculateFuelPrice('qty')">
+          </div>
+          <div class="form-group">
+            <label>Price / Litre (₹)</label>
+            <input type="number" step="0.01" id="fuelPriceUnit" placeholder="e.g. 102.80" oninput="calculateFuelPrice('unit')">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Total Cost (₹)</label>
+          <input type="number" step="0.01" id="fuelTotalCost" placeholder="e.g. 1080.00" oninput="calculateFuelPrice('total')">
+        </div>
+
+        <div class="toggle-container">
+          <span class="toggle-label">Full Tank Fill-up</span>
+          <label class="switch">
+            <input type="checkbox" id="fuelFullTank">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <button class="btn-submit" onclick="addFuelRecord()">Save Fuel Entry</button>
+        <button class="modal-cancel" onclick="closeLogModal()">Cancel</button>
+      </div>
+
+      <!-- VIEW 3: SERVICE FORM INSIDE POPUP -->
+      <div id="modalServiceForm" style="display:none;">
+        <div class="modal-header-row">
+          <button class="btn-back" onclick="backToModalSelect()">← Back</button>
+          <div class="modal-title" style="font-size:1rem;">🔧 Service & Maintenance</div>
+          <span style="width:40px;"></span>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="servDate">
+          </div>
+          <div class="form-group">
+            <label>Odometer (km)</label>
+            <input type="number" id="servOdo" placeholder="e.g. 3000">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Service Cost (₹)</label>
+          <input type="number" step="0.01" id="servCost" placeholder="e.g. 1650.00">
+        </div>
+
+        <div class="form-group">
+          <label>Work Done / Notes</label>
+          <textarea id="servNotes" rows="2" placeholder="e.g. Oil change, chain maintenance, air filter"></textarea>
+        </div>
+
+        <button class="btn-submit warning" onclick="addServiceRecord()">Save Service Entry</button>
+        <button class="modal-cancel" onclick="closeLogModal()">Cancel</button>
+      </div>
+
+      <!-- VIEW 4: EXPENSE FORM INSIDE POPUP -->
+      <div id="modalExpenseForm" style="display:none;">
+        <div class="modal-header-row">
+          <button class="btn-back" onclick="backToModalSelect()">← Back</button>
+          <div class="modal-title" style="font-size:1rem;">💳 General Expense</div>
+          <span style="width:40px;"></span>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="expDate">
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <select id="expCategory">
+              <option value="Parking">Parking</option>
+              <option value="Toll">Toll</option>
+              <option value="Wash & Clean">Wash & Detailing</option>
+              <option value="Accessories">Accessories</option>
+              <option value="Challan">Challan / Fine</option>
+              <option value="Repairs">Repairs & Parts</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Amount (₹)</label>
+          <input type="number" step="0.01" id="expCost" placeholder="e.g. 150.00">
+        </div>
+
+        <div class="form-group">
+          <label>Notes / Remarks</label>
+          <input type="text" id="expNotes" placeholder="e.g. Parking ticket, visor cleaner, etc.">
+        </div>
+
+        <button class="btn-submit purple" onclick="addExpenseRecord()">Save Expense Entry</button>
+        <button class="modal-cancel" onclick="closeLogModal()">Cancel</button>
+      </div>
+
     </div>
   </div>
 
@@ -439,20 +484,30 @@
     let serviceData = JSON.parse(localStorage.getItem('serviceData')) || [];
     let expenseData = JSON.parse(localStorage.getItem('expenseData')) || [];
 
-    // Modal Control Functions
+    // Modal Control & View Switching
     function openLogModal() {
+      backToModalSelect();
       document.getElementById('logModalOverlay').style.display = 'flex';
     }
 
     function closeLogModal(e) {
       if (e && e.target !== e.currentTarget && !e.target.classList.contains('modal-cancel')) return;
       document.getElementById('logModalOverlay').style.display = 'none';
+      backToModalSelect();
     }
 
-    function selectLogOption(type) {
-      closeLogModal();
-      navigateTab(type);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    function backToModalSelect() {
+      document.getElementById('modalSelectView').style.display = 'block';
+      document.getElementById('modalFuelForm').style.display = 'none';
+      document.getElementById('modalServiceForm').style.display = 'none';
+      document.getElementById('modalExpenseForm').style.display = 'none';
+    }
+
+    function showInlineForm(type) {
+      document.getElementById('modalSelectView').style.display = 'none';
+      document.getElementById('modalFuelForm').style.display = (type === 'fuel') ? 'block' : 'none';
+      document.getElementById('modalServiceForm').style.display = (type === 'service') ? 'block' : 'none';
+      document.getElementById('modalExpenseForm').style.display = (type === 'expense') ? 'block' : 'none';
     }
 
     // Tab Navigation
@@ -517,8 +572,9 @@
       document.getElementById('fuelFullTank').checked = false;
 
       refreshAll();
-      alert("Fuel record saved successfully.");
-      navigateTab('dashboard');
+      document.getElementById('logModalOverlay').style.display = 'none';
+      backToModalSelect();
+      alert("Fuel entry added successfully!");
     }
 
     // Add Service Record
@@ -549,8 +605,9 @@
       document.getElementById('servNotes').value = '';
 
       refreshAll();
-      alert("Service record saved successfully.");
-      navigateTab('dashboard');
+      document.getElementById('logModalOverlay').style.display = 'none';
+      backToModalSelect();
+      alert("Service entry added successfully!");
     }
 
     // Add General Expense Record
@@ -580,8 +637,9 @@
       document.getElementById('expNotes').value = '';
 
       refreshAll();
-      alert("Expense saved successfully.");
-      navigateTab('dashboard');
+      document.getElementById('logModalOverlay').style.display = 'none';
+      backToModalSelect();
+      alert("Expense entry added successfully!");
     }
 
     // Delete Record
@@ -728,7 +786,7 @@
       const container = document.getElementById('fuelHistoryList');
 
       if (sorted.length === 0) {
-        container.innerHTML = `<div class="empty-state">No fuel entries found.</div>`;
+        container.innerHTML = `<div class="empty-state">No fuel entries found. Tap + to add.</div>`;
         return;
       }
 
@@ -756,7 +814,7 @@
       const container = document.getElementById('serviceHistoryList');
 
       if (sorted.length === 0) {
-        container.innerHTML = `<div class="empty-state">No service entries found.</div>`;
+        container.innerHTML = `<div class="empty-state">No service entries found. Tap + to add.</div>`;
         return;
       }
 
@@ -782,7 +840,7 @@
       const container = document.getElementById('expenseHistoryList');
 
       if (sorted.length === 0) {
-        container.innerHTML = `<div class="empty-state">No expense entries found.</div>`;
+        container.innerHTML = `<div class="empty-state">No expense entries found. Tap + to add.</div>`;
         return;
       }
 

@@ -26,7 +26,7 @@
     }
 
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; }
-    body { background: var(--bg); color: var(--text); padding: 16px; max-width: 600px; margin: 0 auto; -webkit-tap-highlight-color: transparent; }
+    body { background: var(--bg); color: var(--text); padding: 16px 16px 80px 16px; max-width: 600px; margin: 0 auto; -webkit-tap-highlight-color: transparent; }
 
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     header h1 { font-size: 1.3rem; font-weight: 700; color: var(--text); }
@@ -93,6 +93,94 @@
     .btn-delete { position: absolute; right: 12px; bottom: 10px; background: none; border: none; color: var(--danger); font-size: 0.75rem; font-weight: 600; cursor: pointer; }
 
     .empty-state { text-align: center; padding: 32px 16px; color: var(--text-muted); font-size: 0.85rem; }
+
+    /* Floating Action Button (FAB) */
+    .fab-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      border: none;
+      box-shadow: 0 4px 12px rgba(37,99,235,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 300;
+      cursor: pointer;
+      z-index: 100;
+      transition: transform 0.2s, background-color 0.2s;
+    }
+    .fab-btn:active { transform: scale(0.92); }
+
+    /* Modal / Action Sheet */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(2px);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 200;
+    }
+    .modal-sheet {
+      background: var(--surface);
+      width: 100%;
+      max-width: 500px;
+      border-radius: 20px 20px 0 0;
+      padding: 20px;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+      animation: slideUp 0.25s ease-out;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .modal-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 16px; color: var(--text); }
+    .action-option {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      width: 100%;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.15s;
+    }
+    .action-option:active { background: #f1f5f9; }
+    .action-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+    }
+    .modal-cancel {
+      width: 100%;
+      padding: 12px;
+      background: #f1f5f9;
+      border: none;
+      border-radius: 10px;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      margin-top: 6px;
+    }
   </style>
 </head>
 <body>
@@ -293,6 +381,42 @@
     <div id="expenseHistoryList"></div>
   </div>
 
+  <!-- Floating Action Button (+) -->
+  <button class="fab-btn" onclick="openLogModal()" title="Add New Log">+</button>
+
+  <!-- Modal / Bottom Sheet -->
+  <div id="logModalOverlay" class="modal-overlay" onclick="closeLogModal(event)">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-title">What would you like to log?</div>
+      
+      <button class="action-option" onclick="selectLogOption('fuel')">
+        <div class="action-icon" style="background: #eff6ff; color: var(--primary);">⛽</div>
+        <div>
+          <div>Fuel Fill-Up</div>
+          <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Log litres, price, odometer reading</div>
+        </div>
+      </button>
+
+      <button class="action-option" onclick="selectLogOption('service')">
+        <div class="action-icon" style="background: #fef3c7; color: var(--warning);">🔧</div>
+        <div>
+          <div>Service & Maintenance</div>
+          <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Log service cost, odometer & notes</div>
+        </div>
+      </button>
+
+      <button class="action-option" onclick="selectLogOption('expense')">
+        <div class="action-icon" style="background: #f3e8ff; color: var(--purple);">💳</div>
+        <div>
+          <div>General Expense</div>
+          <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Toll, Parking, Wash, Accessories, etc.</div>
+        </div>
+      </button>
+
+      <button class="modal-cancel" onclick="closeLogModal()">Cancel</button>
+    </div>
+  </div>
+
   <script>
     // Register Service Worker with instant auto-update
     if ('serviceWorker' in navigator) {
@@ -320,6 +444,22 @@
     let fuelData = JSON.parse(localStorage.getItem('fuelData')) || [];
     let serviceData = JSON.parse(localStorage.getItem('serviceData')) || [];
     let expenseData = JSON.parse(localStorage.getItem('expenseData')) || [];
+
+    // Modal Control Functions
+    function openLogModal() {
+      document.getElementById('logModalOverlay').style.display = 'flex';
+    }
+
+    function closeLogModal(e) {
+      if (e && e.target !== e.currentTarget && !e.target.classList.contains('modal-cancel')) return;
+      document.getElementById('logModalOverlay').style.display = 'none';
+    }
+
+    function selectLogOption(type) {
+      closeLogModal();
+      navigateTab(type);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
     // Tab Navigation
     function navigateTab(tabKey) {
@@ -376,7 +516,6 @@
 
       localStorage.setItem('fuelData', JSON.stringify(fuelData));
       
-      // Clear inputs
       document.getElementById('fuelOdo').value = '';
       document.getElementById('fuelQty').value = '';
       document.getElementById('fuelPriceUnit').value = '';
@@ -385,6 +524,7 @@
 
       refreshAll();
       alert("Fuel record saved successfully.");
+      navigateTab('dashboard');
     }
 
     // Add Service Record
@@ -416,6 +556,7 @@
 
       refreshAll();
       alert("Service record saved successfully.");
+      navigateTab('dashboard');
     }
 
     // Add General Expense Record
@@ -446,6 +587,7 @@
 
       refreshAll();
       alert("Expense saved successfully.");
+      navigateTab('dashboard');
     }
 
     // Delete Record
@@ -492,7 +634,6 @@
 
     // Metrics Calculation
     function computeMetrics() {
-      // 1. Mileage & Cost Per Km
       const sortedFuelByOdo = [...fuelData].sort((a, b) => a.odo - b.odo);
       if (sortedFuelByOdo.length >= 2) {
         const totalKm = sortedFuelByOdo[sortedFuelByOdo.length - 1].odo - sortedFuelByOdo[0].odo;
@@ -508,14 +649,12 @@
         document.getElementById('valCostPerKm').innerText = '--';
       }
 
-      // 2. Total Spend (Fuel + Service + General Expenses)
       const sumFuel = fuelData.reduce((acc, cur) => acc + (cur.cost || 0), 0);
       const sumService = serviceData.reduce((acc, cur) => acc + (cur.cost || 0), 0);
       const sumExpense = expenseData.reduce((acc, cur) => acc + (cur.cost || 0), 0);
       const totalAll = sumFuel + sumService + sumExpense;
       document.getElementById('valTotalSpend').innerText = `₹${totalAll.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 
-      // 3. Last 30 Days Spend
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const cutoffStr = thirtyDaysAgo.toISOString().split('T')[0];
@@ -536,14 +675,13 @@
         ...expenseData.map(i => ({ ...i, section: 'expense' }))
       ];
 
-      // Sort newest first by date and creation timestamp
       unified.sort((a, b) => (b.date.localeCompare(a.date)) || ((b.createdTime || b.id) - (a.createdTime || a.id)));
 
       const recentTen = unified.slice(0, 10);
       const container = document.getElementById('recentActivityList');
 
       if (recentTen.length === 0) {
-        container.innerHTML = `<div class="empty-state">No activities logged yet. Import your CSV or add entries.</div>`;
+        container.innerHTML = `<div class="empty-state">No activities logged yet. Import your CSV or tap + to add entries.</div>`;
         return;
       }
 

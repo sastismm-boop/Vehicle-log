@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vehicle Log</title>
+  
+  <!-- PWA & Mobile Settings -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <style>
+    :root {
+      --primary: #2563eb;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --accent: #10b981;
+    }
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); padding: 16px; max-width: 480px; margin: 0 auto; user-select: none; }
+    h1 { font-size: 1.25rem; font-weight: 700; margin-bottom: 12px; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tab-btn { flex: 1; padding: 10px; border: none; background: #e2e8f0; border-radius: 8px; font-weight: 600; cursor: pointer; color: var(--muted); }
+    .tab-btn.active { background: var(--primary); color: #fff; }
+    .card { background: var(--card); border-radius: 12px; padding: 16px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 16px; }
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .stat-box { background: #eff6ff; padding: 12px; border-radius: 8px; text-align: center; }
+    .stat-box .val { font-size: 1.2rem; font-weight: 700; color: var(--primary); }
+    .stat-box .lbl { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+    label { font-size: 0.85rem; font-weight: 600; color: var(--muted); display: block; margin-bottom: 4px; }
+    input, textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 12px; font-size: 0.95rem; }
+    button.submit-btn { width: 100%; background: var(--accent); color: white; padding: 12px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 1rem; }
+    .csv-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+    .csv-btn { flex: 1; padding: 9px; font-size: 0.82rem; font-weight: 600; border: 1px dashed var(--primary); background: #eff6ff; color: var(--primary); border-radius: 8px; cursor: pointer; text-align: center; }
+    .log-item { border-left: 4px solid var(--primary); padding: 10px 12px; margin-bottom: 10px; background: #f1f5f9; border-radius: 0 8px 8px 0; position: relative; }
+    .log-item.service { border-left-color: #f59e0b; }
+    .log-top { display: flex; justify-content: space-between; font-weight: 700; font-size: 0.95rem; }
+    .log-sub { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+    .del-btn { position: absolute; right: 8px; bottom: 8px; background: none; border: none; color: #ef4444; font-size: 0.8rem; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <h1>🏍️ Vehicle Log</h1>
+
+  <div class="stats-grid">
+    <div class="stat-box">
+      <div class="val" id="statMileage">--</div>
+      <div class="lbl">Avg Mileage (km/l)</div>
+    </div>
+    <div class="stat-box">
+      <div class="val" id="statCost">--</div>
+      <div class="lbl">Cost per km (₹)</div>
+    </div>
+  </div>
+
+  <div class="csv-bar">
+    <label class="csv-btn" style="display:flex; align-items:center; justify-content:center;">
+      📥 Import CSV
+      <input type="file" id="csvFileInput" accept=".csv" style="display:none;" onchange="importVehIQCSV(event)">
+    </label>
+    <button class="csv-btn" style="border-color:var(--muted); background:#fff; color:var(--text);" onclick="exportDataCSV()">📤 Backup CSV</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('fuel')">⛽ Fuel Log</button>
+    <button class="tab-btn" onclick="switchTab('service')">🔧 Service Log</button>
+  </div>
+
+  <!-- FUEL TAB -->
+  <div id="fuelSection">
+    <div class="card">
+      <h3 style="margin-bottom: 12px; font-size: 1rem;">Nayi Fuel Entry</h3>
+      <label>Date</label>
+      <input type="date" id="fuelDate">
+
+      <label>Odometer Reading (km)</label>
+      <input type="number" id="fuelOdo" placeholder="e.g. 2643">
+
+      <div style="display: flex; gap: 8px;">
+        <div style="flex: 1;">
+          <label>Petrol (L)</label>
+          <input type="number" step="0.01" id="fuelLitres" placeholder="e.g. 10.5">
+        </div>
+        <div style="flex: 1;">
+          <label>Total (₹)</label>
+          <input type="number" step="0.01" id="fuelCost" placeholder="e.g. 1000">
+        </div>
+      </div>
+
+      <button class="submit-btn" onclick="addFuelEntry()">Save Fuel Entry</button>
+    </div>
+
+    <h3 style="font-size: 1rem; margin-bottom: 8px;">Fuel History</h3>
+    <div id="fuelHistory"></div>
+  </div>
+
+  <!-- SERVICE TAB -->
+  <div id="serviceSection" style="display: none;">
+    <div class="card">
+      <h3 style="margin-bottom: 12px; font-size: 1rem;">Nayi Service Entry</h3>
+      <label>Date</label>
+      <input type="date" id="servDate">
+
+      <label>Odometer (km)</label>
+      <input type="number" id="servOdo" placeholder="e.g. 3000">
+
+      <label>Total Bill (₹)</label>
+      <input type="number" step="0.01" id="servCost" placeholder="e.g. 1650">
+
+      <label>Work Done / Notes</label>
+      <textarea id="servNotes" rows="2" placeholder="e.g. Oil change, chain lube"></textarea>
+
+      <button class="submit-btn" style="background: #f59e0b;" onclick="addServiceEntry()">Save Service Entry</button>
+    </div>
+
+    <h3 style="font-size: 1rem; margin-bottom: 8px;">Service History</h3>
+    <div id="serviceHistory"></div>
+  </div>
+
+  <script>
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js')
+        .then(() => console.log('Service Worker Registered!'))
+        .catch(err => console.log('SW failed', err));
+    }
+
+    document.getElementById('fuelDate').valueAsDate = new Date();
+    document.getElementById('servDate').valueAsDate = new Date();
+
+    let fuelLogs = JSON.parse(localStorage.getItem('fuelLogs')) || [];
+    let serviceLogs = JSON.parse(localStorage.getItem('serviceLogs')) || [];
+
+    function switchTab(type) {
+      const isFuel = type === 'fuel';
+      document.getElementById('fuelSection').style.display = isFuel ? 'block' : 'none';
+      document.getElementById('serviceSection').style.display = isFuel ? 'none' : 'block';
+      document.querySelectorAll('.tab-btn')[0].classList.toggle('active', isFuel);
+      document.querySelectorAll('.tab-btn')[1].classList.toggle('active', !isFuel);
+    }
+
+    function addFuelEntry() {
+      const date = document.getElementById('fuelDate').value;
+      const odo = parseFloat(document.getElementById('fuelOdo').value);
+      const litres = parseFloat(document.getElementById('fuelLitres').value);
+      const cost = parseFloat(document.getElementById('fuelCost').value);
+
+      if (!odo || !litres || !cost) return alert("Puri details bharein!");
+
+      fuelLogs.push({ date, odo, litres, cost, id: Date.now() });
+      fuelLogs.sort((a, b) => a.odo - b.odo);
+      localStorage.setItem('fuelLogs', JSON.stringify(fuelLogs));
+
+      document.getElementById('fuelOdo').value = '';
+      document.getElementById('fuelLitres').value = '';
+      document.getElementById('fuelCost').value = '';
+      render();
+    }
+
+    function addServiceEntry() {
+      const date = document.getElementById('servDate').value;
+      const odo = parseFloat(document.getElementById('servOdo').value);
+      const cost = parseFloat(document.getElementById('servCost').value) || 0;
+      const notes = document.getElementById('servNotes').value;
+
+      if (!odo || !notes) return alert("Odometer aur details bharein!");
+
+      serviceLogs.push({ date, odo, cost, notes, id: Date.now() });
+      serviceLogs.sort((a, b) => b.odo - a.odo);
+      localStorage.setItem('serviceLogs', JSON.stringify(serviceLogs));
+
+      document.getElementById('servOdo').value = '';
+      document.getElementById('servCost').value = '';
+      document.getElementById('servNotes').value = '';
+      render();
+    }
+
+    function deleteEntry(type, id) {
+      if (!confirm("Entry delete karein?")) return;
+      if (type === 'fuel') {
+        fuelLogs = fuelLogs.filter(item => item.id !== id);
+        localStorage.setItem('fuelLogs', JSON.stringify(fuelLogs));
+      } else {
+        serviceLogs = serviceLogs.filter(item => item.id !== id);
+        localStorage.setItem('serviceLogs', JSON.stringify(serviceLogs));
+      }
+      render();
+    }
+
+    function importVehIQCSV(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const text = evt.target.result;
+        const lines = text.split(/\r?\n/);
+        let mode = '';
+        let addedFuel = 0;
+        let addedService = 0;
+
+        lines.forEach(line => {
+          const trimmed = line.trim();
+          if (!trimmed) return;
+
+          if (trimmed.startsWith('FUEL ENTRIES')) { mode = 'fuel'; return; }
+          if (trimmed.startsWith('SERVICE RECORDS')) { mode = 'service'; return; }
+          if (trimmed.startsWith('Total')) return;
+
+          const cols = trimmed.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+
+          if (mode === 'fuel' && cols[0] !== 'Date') {
+            const date = cols[0];
+            const odo = parseFloat(cols[1]);
+            const litres = parseFloat(cols[2]);
+            const cost = parseFloat(cols[4]);
+            if (!isNaN(odo) && !isNaN(litres)) {
+              fuelLogs.push({ date, odo, litres, cost: isNaN(cost) ? 0 : cost, id: Date.now() + Math.random() });
+              addedFuel++;
+            }
+          } else if (mode === 'service' && cols[0] !== 'Date') {
+            const date = cols[0];
+            const title = cols[2] || cols[1] || 'Service';
+            const odo = parseFloat(cols[4]);
+            const cost = parseFloat(cols[5]);
+            const notes = cols[6] ? `${title} - ${cols[6]}` : title;
+            if (!isNaN(odo)) {
+              serviceLogs.push({ date, odo, cost: isNaN(cost) ? 0 : cost, notes, id: Date.now() + Math.random() });
+              addedService++;
+            }
+          }
+        });
+
+        fuelLogs.sort((a, b) => a.odo - b.odo);
+        serviceLogs.sort((a, b) => b.odo - a.odo);
+        localStorage.setItem('fuelLogs', JSON.stringify(fuelLogs));
+        localStorage.setItem('serviceLogs', JSON.stringify(serviceLogs));
+        render();
+        alert(`Import successful: ${addedFuel} Fuel aur ${addedService} Service records load ho gaye!`);
+      };
+      reader.readAsText(file);
+    }
+
+    function exportDataCSV() {
+      let csv = 'FUEL ENTRIES\nDate,Odometer (km),Quantity (L),Price/Unit (₹),Total Cost (₹)\n';
+      fuelLogs.forEach(f => {
+        csv += `${f.date},${f.odo},${f.litres},${(f.cost / f.litres).toFixed(2)},${f.cost}\n`;
+      });
+      csv += '\nSERVICE RECORDS\nDate,Title,Odometer (km),Cost (₹),Notes\n';
+      serviceLogs.forEach(s => {
+        csv += `${s.date},Service,${s.odo},${s.cost},"${(s.notes || '').replace(/"/g, '""')}"\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('href', url);
+      a.setAttribute('download', `vehicle_logs_backup_${new Date().toISOString().slice(0,10)}.csv`);
+      a.click();
+    }
+
+    function render() {
+      if (fuelLogs.length >= 2) {
+        const minOdo = fuelLogs[0].odo;
+        const maxOdo = fuelLogs[fuelLogs.length - 1].odo;
+        const totalKm = maxOdo - minOdo;
+        const totalL = fuelLogs.slice(1).reduce((acc, cur) => acc + cur.litres, 0);
+        const totalCost = fuelLogs.slice(1).reduce((acc, cur) => acc + cur.cost, 0);
+
+        if (totalL > 0 && totalKm > 0) {
+          document.getElementById('statMileage').innerText = (totalKm / totalL).toFixed(1);
+          document.getElementById('statCost').innerText = (totalCost / totalKm).toFixed(2);
+        }
+      } else {
+        document.getElementById('statMileage').innerText = "--";
+        document.getElementById('statCost').innerText = "--";
+      }
+
+      const fuelContainer = document.getElementById('fuelHistory');
+      fuelContainer.innerHTML = fuelLogs.slice().reverse().map(item => `
+        <div class="log-item">
+          <div class="log-top">
+            <span>${item.odo} km</span>
+            <span>₹${item.cost}</span>
+          </div>
+          <div class="log-sub">${item.date} • ${item.litres} L (${(item.cost / item.litres).toFixed(1)}/L)</div>
+          <button class="del-btn" onclick="deleteEntry('fuel', ${item.id})">Delete</button>
+        </div>
+      `).join('') || '<p style="color:var(--muted); font-size:0.85rem;">Koi entry nahi hai.</p>';
+
+      const servContainer = document.getElementById('serviceHistory');
+      servContainer.innerHTML = serviceLogs.map(item => `
+        <div class="log-item service">
+          <div class="log-top">
+            <span>${item.odo} km</span>
+            <span>₹${item.cost}</span>
+          </div>
+          <div class="log-sub">${item.date}</div>
+          <div style="font-size:0.85rem; margin-top:4px;">${item.notes}</div>
+          <button class="del-btn" onclick="deleteEntry('service', ${item.id})">Delete</button>
+        </div>
+      `).join('') || '<p style="color:var(--muted); font-size:0.85rem;">Koi service entry nahi hai.</p>';
+    }
+
+    render();
+  </script>
+</body>
+</html>

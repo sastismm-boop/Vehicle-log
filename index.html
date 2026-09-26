@@ -186,7 +186,7 @@
       border-color: var(--accent);
     }
 
-    /* Dropdown */
+    /* Custom Dropdown */
     .custom-select-wrapper {
       position: relative;
       user-select: none;
@@ -624,7 +624,7 @@
     <div class="stat-card">
       <div class="stat-title">⛽ Avg. Mileage</div>
       <div class="stat-val" id="statMileage">-- <span style="font-size:0.8rem">km/L</span></div>
-      <div class="stat-sub">Tank-to-tank avg</div>
+      <div class="stat-sub" id="statMileageRange">Add 2+ fuel logs</div>
     </div>
     <div class="stat-card">
       <div class="stat-title">📉 Running Cost</div>
@@ -975,14 +975,12 @@
       localStorage.setItem('vehIQ_logs', JSON.stringify(logs));
     }
 
-// Sahi aur Solid Calculation Engine
+    // Mileage & Metrics Calculations (Rock-Solid Accurate)
     function calculateMetrics() {
-      // 1. Total Spend (Fuel + Service + Expense)
       const totalSpend = logs.reduce((acc, l) => acc + (parseFloat(l.cost) || 0), 0);
       document.getElementById('statTotalSpend').textContent = '₹' + Math.round(totalSpend).toLocaleString('en-IN');
       document.getElementById('statTotalLogs').textContent = logs.length + ' entries logged';
 
-      // 2. Last 30 Days Spend
       const now = new Date();
       const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
       const recentLogs = logs.filter(l => new Date(l.date) >= thirtyDaysAgo);
@@ -990,7 +988,6 @@
       document.getElementById('statMonthSpend').textContent = '₹' + Math.round(recentSpend).toLocaleString('en-IN');
       document.getElementById('statMonthLogs').textContent = recentLogs.length + ' entries in 30 days';
 
-      // 3. Mileage & Running Cost (Fuel Entries Sorted by Odometer)
       const fuelLogs = logs
         .filter(l => l.type === 'Fuel' && (parseFloat(l.odometer) || 0) > 0)
         .sort((a, b) => (parseFloat(a.odometer) || 0) - (parseFloat(b.odometer) || 0));
@@ -1000,7 +997,6 @@
         const lastOdo = parseFloat(fuelLogs[fuelLogs.length - 1].odometer);
         const totalDistance = lastOdo - firstOdo;
 
-        // Total fuel consumed between first and last odometer
         const totalFuelQty = fuelLogs.slice(1).reduce((acc, l) => acc + (parseFloat(l.quantity) || 0), 0) 
                              || fuelLogs.reduce((acc, l) => acc + (parseFloat(l.quantity) || 0), 0);
 
@@ -1008,11 +1004,9 @@
                               || fuelLogs.reduce((acc, l) => acc + (parseFloat(l.cost) || 0), 0);
 
         if (totalDistance > 0 && totalFuelQty > 0) {
-          // Real Mileage: Km / Litre
           const avgMileage = (totalDistance / totalFuelQty).toFixed(2);
           document.getElementById('statMileage').innerHTML = `${avgMileage} <span style="font-size:0.8rem">km/L</span>`;
 
-          // Real Running Cost: Total Fuel Rupees / Total Km
           const costPerKm = (totalFuelCost / totalDistance).toFixed(2);
           document.getElementById('statRunningCost').innerHTML = `₹${costPerKm} <span style="font-size:0.8rem">/km</span>`;
           document.getElementById('statMileageRange').textContent = `${totalDistance.toLocaleString('en-IN')} km tracked`;
@@ -1028,19 +1022,6 @@
       document.getElementById('statMileage').innerHTML = `-- <span style="font-size:0.8rem">km/L</span>`;
       document.getElementById('statRunningCost').innerHTML = `-- <span style="font-size:0.8rem">₹/km</span>`;
       document.getElementById('statMileageRange').textContent = 'Add 2+ fuel logs';
-    }
-      }
-
-      if (totalLiters > 0 && totalKm > 0) {
-        const avg = (totalKm / totalLiters).toFixed(2);
-        document.getElementById('statMileage').innerHTML = `${avg} <span style="font-size:0.8rem">km/L</span>`;
-        const avgRate = fuelLogs.reduce((acc, l) => acc + (l.cost || 0), 0) / fuelLogs.reduce((acc, l) => acc + (l.quantity || 1), 1);
-        const costPerKm = (avgRate / (totalKm / totalLiters)).toFixed(2);
-        document.getElementById('statRunningCost').innerHTML = `₹${costPerKm} <span style="font-size:0.8rem">/km</span>`;
-      } else {
-        document.getElementById('statMileage').innerHTML = `-- <span style="font-size:0.8rem">km/L</span>`;
-        document.getElementById('statRunningCost').innerHTML = `-- <span style="font-size:0.8rem">₹/km</span>`;
-      }
     }
 
     // Render Logs Feed
@@ -1179,10 +1160,7 @@
       }
     });
 
-    // ========================================================
-    // MULTI-SECTION ROBUST CSV EXPORT & SMART UNIVERSAL IMPORT
-    // ========================================================
-
+    // Multi-Section CSV Export & Smart Import
     document.getElementById('exportBtn').addEventListener('click', () => {
       if (logs.length === 0) {
         alert('No data to export.');
@@ -1192,7 +1170,6 @@
     });
 
     function exportUnifiedCSV() {
-      // 1. Separate sections
       const fuels = logs.filter(l => l.type === 'Fuel');
       const services = logs.filter(l => l.type === 'Service');
       const expenses = logs.filter(l => l.type === 'Expense');
@@ -1225,7 +1202,6 @@
       localStorage.setItem('vehIQ_last_backup', new Date().toISOString());
     }
 
-    // Android Native File Picker Handler
     document.getElementById('importBtn').addEventListener('click', () => {
       fileInput.value = '';
       fileInput.click();
@@ -1246,7 +1222,6 @@
       reader.readAsText(file);
     });
 
-    // Multi-Section Parser (Handles Fuel Entries, Service Records & General Expenses)
     function parseSmartMultiSectionCSV(text) {
       if (!text || !text.trim()) {
         alert('File is empty.');
@@ -1283,7 +1258,6 @@
         const line = rawLines[i];
         const upper = line.toUpperCase();
 
-        // 1. Detect Section Headers
         if (upper.includes('FUEL ENTRIES') || upper.includes('FUEL LOGS')) {
           currentSection = 'FUEL';
           sectionHeaders = [];
@@ -1298,7 +1272,6 @@
           continue;
         }
 
-        // 2. Read column header row for current section
         if (sectionHeaders.length === 0) {
           const cols = parseLine(line).map(c => c.toLowerCase().replace(/[^a-z0-9]/g, ''));
           if (cols.some(c => c.includes('date') || c.includes('odo') || c.includes('cost') || c.includes('price'))) {
@@ -1307,11 +1280,9 @@
           }
         }
 
-        // 3. Process row values
         const row = parseLine(line);
         if (row.length < 2) continue;
 
-        // Auto determine column positions
         const dateIdx = sectionHeaders.findIndex(h => h.includes('date') || h.includes('time'));
         const odoIdx = sectionHeaders.findIndex(h => h.includes('odo') || h.includes('km') || h.includes('reading'));
         const qtyIdx = sectionHeaders.findIndex(h => h.includes('qty') || h.includes('quantity') || h.includes('litre') || h.includes('liter'));
@@ -1335,7 +1306,6 @@
           rowFullTank = ['yes', 'true', '1', 'y'].includes(ftVal);
         }
 
-        // Infer Type
         let rowType = 'Fuel';
         if (currentSection === 'SERVICE') {
           rowType = 'Service';
@@ -1344,7 +1314,6 @@
         } else if (currentSection === 'FUEL') {
           rowType = 'Fuel';
         } else {
-          // If no section header was found (single table format)
           if (rowQty > 0) rowType = 'Fuel';
           else if (rowCat) rowType = 'Expense';
           else rowType = 'Fuel';

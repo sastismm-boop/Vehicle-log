@@ -1,0 +1,6 @@
+{
+  "appId": "com.vehiclelog.app",
+  "appName": "Vehicle Log Manager",
+  "webDir": ".",
+  "bundledWebRuntime": false
+}

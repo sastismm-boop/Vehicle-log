@@ -1,10 +1,13 @@
 name: Build Android APK
 
 on:
-  workflow_dispatch: # Button dabate hi build shuru hoga
+  workflow_dispatch:
   push:
     branches:
-      - main # Jab bhi main branch me code update hoga
+      - main
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -25,19 +28,35 @@ jobs:
           distribution: 'zulu'
           java-version: 17
 
-      - name: Install Capacitor & Dependencies
+      - name: Prepare Web Directory
+        run: |
+          mkdir -p www
+          cp index.html www/
+          cp manifest.json www/ || true
+          cp sw.js www/ || true
+
+      - name: Install Dependencies & Setup Capacitor
         run: |
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
+          cat << 'EOF' > capacitor.config.json
+          {
+            "appId": "com.vehiclelog.app",
+            "appName": "Vehicle Log Manager",
+            "webDir": "www",
+            "bundledWebRuntime": false
+          }
+          EOF
           npx cap add android
 
-      - name: Sync Web Code to Android
+      - name: Sync Android
         run: |
           npx cap sync android
 
       - name: Build Debug APK
         run: |
           cd android
+          chmod +x gradlew
           ./gradlew assembleDebug
 
       - name: Upload APK Artifact
@@ -48,7 +67,7 @@ jobs:
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main'
         with:
           tag_name: v1.0.0
           name: Vehicle Log Manager v1.0.0

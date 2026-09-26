@@ -1,964 +1,1089 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vehicle Log Manager</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>VehIQ - Vehicle Log Manager</title>
   
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#1e293b">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Phosphor Icons for crisp, clean mobile UI -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            },
+            darkbg: '#0f172a',
+            darkcard: '#1e293b',
+            darkborder: '#334155'
+          }
+        }
+      }
+    }
+  </script>
 
   <style>
-    :root {
-      --primary: #2563eb;
-      --primary-dark: #1d4ed8;
-      --bg: #f8fafc;
-      --surface: #ffffff;
-      --text: #0f172a;
-      --text-muted: #64748b;
-      --border: #e2e8f0;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --purple: #8b5cf6;
-    }
-
-    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; }
-    body { background: var(--bg); color: var(--text); padding: 16px 16px 85px 16px; max-width: 600px; margin: 0 auto; -webkit-tap-highlight-color: transparent; }
-
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    header h1 { font-size: 1.3rem; font-weight: 700; color: var(--text); }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     
-    /* Metrics Grid */
-    .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
-    .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
-    .metric-value { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
-    .metric-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-top: 4px; letter-spacing: 0.5px; }
-
-    /* Actions Bar */
-    .action-bar { display: flex; gap: 8px; margin-bottom: 16px; }
-    .action-btn { flex: 1; padding: 9px 12px; font-size: 0.82rem; font-weight: 600; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; text-align: center; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-    .action-btn.primary { background: #eff6ff; color: var(--primary); border-color: #bfdbfe; }
-
-    /* Navigation Tabs */
-    .nav-tabs { display: flex; background: #e2e8f0; border-radius: 10px; padding: 4px; margin-bottom: 16px; gap: 4px; overflow-x: auto; }
-    .nav-tab { flex: 1; border: none; background: transparent; padding: 8px 12px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); border-radius: 6px; cursor: pointer; white-space: nowrap; text-align: center; }
-    .nav-tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-
-    /* Card & Form Styles */
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
-    .card-title { font-size: 1rem; font-weight: 700; margin-bottom: 14px; color: var(--text); }
-    
-    .form-group { margin-bottom: 12px; }
-    .form-row { display: flex; gap: 10px; }
-    .form-row .form-group { flex: 1; }
-    
-    label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
-    input, select, textarea { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.95rem; background: var(--surface); color: var(--text); }
-    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
-    
-    /* Toggle switch for Full Tank */
-    .toggle-container { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; margin-bottom: 12px; }
-    .toggle-label { font-size: 0.85rem; font-weight: 600; color: var(--text); }
-    .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
-    .switch input { opacity: 0; width: 0; height: 0; }
-    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .2s; border-radius: 24px; }
-    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .2s; border-radius: 50%; }
-    input:checked + .slider { background-color: var(--primary); }
-    input:checked + .slider:before { transform: translateX(20px); }
-
-    .btn-submit { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-    .btn-submit:hover { background: var(--primary-dark); }
-    .btn-submit.warning { background: var(--warning); color: #fff; }
-    .btn-submit.purple { background: var(--purple); color: #fff; }
-
-    /* Controls (Sort bar) */
-    .controls-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .controls-bar span { font-size: 0.85rem; font-weight: 700; color: var(--text); }
-    .sort-select { width: auto; padding: 6px 10px; font-size: 0.8rem; border-radius: 6px; }
-
-    /* List items */
-    .entry-card { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; position: relative; }
-    .entry-card.service-entry { border-left-color: var(--warning); }
-    .entry-card.expense-entry { border-left-color: var(--purple); }
-    .entry-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
-    .entry-title { font-size: 0.95rem; font-weight: 700; color: var(--text); }
-    .entry-cost { font-size: 1rem; font-weight: 700; color: var(--text); }
-    .entry-meta { font-size: 0.8rem; color: var(--text-muted); display: flex; gap: 8px; flex-wrap: wrap; }
-    .badge { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #e0f2fe; color: #0369a1; text-transform: uppercase; }
-    .badge-full { background: #dcfce7; color: #15803d; }
-    .badge-expense { background: #f3e8ff; color: #6b21a8; }
-    .btn-delete { position: absolute; right: 12px; bottom: 10px; background: none; border: none; color: var(--danger); font-size: 0.75rem; font-weight: 600; cursor: pointer; }
-
-    .empty-state { text-align: center; padding: 32px 16px; color: var(--text-muted); font-size: 0.85rem; }
-
-    /* Floating Action Button (FAB) */
-    .fab-btn {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background: var(--primary);
-      color: white;
-      border: none;
-      box-shadow: 0 4px 14px rgba(37,99,235,0.45);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 30px;
-      line-height: 1;
-      cursor: pointer;
-      z-index: 100;
-      transition: transform 0.2s, background-color 0.2s;
+    * {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
     }
-    .fab-btn:active { transform: scale(0.92); }
 
-    /* Modal / Bottom Sheet */
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(15, 23, 42, 0.6);
-      backdrop-filter: blur(4px);
-      display: none;
-      align-items: flex-end;
-      justify-content: center;
-      z-index: 200;
+    body {
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      padding-left: env(safe-area-inset-left, 0px);
+      padding-right: env(safe-area-inset-right, 0px);
     }
-    .modal-sheet {
-      background: var(--surface);
-      width: 100%;
-      max-width: 540px;
-      border-radius: 20px 20px 0 0;
-      padding: 20px 20px 28px 20px;
-      box-shadow: 0 -4px 24px rgba(0,0,0,0.2);
-      animation: slideUp 0.22s ease-out;
-      max-height: 90vh;
-      overflow-y: auto;
+
+    /* Fix for note wrapping and boundary control */
+    .wrap-note {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      white-space: pre-wrap;
     }
-    @keyframes slideUp {
-      from { transform: translateY(100%); }
-      to { transform: translateY(0); }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
     }
-    .modal-header-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-    }
-    .modal-title { font-size: 1.1rem; font-weight: 700; color: var(--text); }
-    .btn-back {
-      background: none;
-      border: none;
-      color: var(--primary);
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      padding: 4px 0;
-    }
-    .action-option {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      width: 100%;
-      padding: 14px 16px;
-      margin-bottom: 10px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      background: var(--surface);
-      color: var(--text);
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      text-align: left;
-      transition: background 0.15s;
-    }
-    .action-option:active { background: #f1f5f9; }
-    .action-icon {
-      width: 42px;
-      height: 42px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.3rem;
-    }
-    .modal-cancel {
-      width: 100%;
-      padding: 12px;
-      background: #f1f5f9;
-      border: none;
-      border-radius: 10px;
-      color: var(--text-muted);
-      font-weight: 600;
-      font-size: 0.95rem;
-      cursor: pointer;
-      margin-top: 6px;
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.4);
+      border-radius: 9999px;
     }
   </style>
 </head>
-<body>
 
-  <header>
-    <h1>Vehicle Log Manager</h1>
+<body class="bg-slate-50 dark:bg-darkbg text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200 antialiased selection:bg-brand-500 selection:text-white pb-28">
+
+  <header class="sticky top-0 z-30 bg-white/80 dark:bg-darkbg/85 backdrop-blur-md border-b border-slate-200 dark:border-darkborder transition-colors">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
+          <i class="ph-bold ph-gauge text-xl"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-slate-900 dark:text-white leading-tight">VehIQ</h1>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium tracking-wide uppercase">Fleet & Expense Log</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <!-- Theme Switcher Button -->
+        <button id="themeToggleBtn" onclick="toggleTheme()" class="p-2.5 rounded-xl border border-slate-200 dark:border-darkborder hover:bg-slate-100 dark:hover:bg-darkcard text-slate-600 dark:text-slate-300 transition-colors" title="Toggle Dark/Light Mode">
+          <i id="themeIcon" class="ph-bold ph-moon text-lg"></i>
+        </button>
+
+        <!-- Settings / Backup Button -->
+        <button onclick="openSettingsModal()" class="p-2.5 rounded-xl border border-slate-200 dark:border-darkborder hover:bg-slate-100 dark:hover:bg-darkcard text-slate-600 dark:text-slate-300 transition-colors" title="Backup & Settings">
+          <i class="ph-bold ph-gear text-lg"></i>
+        </button>
+      </div>
+    </div>
   </header>
 
-  <!-- Summary Dashboard -->
-  <div class="metrics-grid">
-    <div class="metric-card">
-      <div class="metric-value" id="valMileage">--</div>
-      <div class="metric-label">Avg Mileage</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-value" id="valCostPerKm">--</div>
-      <div class="metric-label">Running Cost</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-value" id="valTotalSpend">--</div>
-      <div class="metric-label">Total Spend</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-value" id="valMonthSpend">--</div>
-      <div class="metric-label">Last 30 Days</div>
-    </div>
+  <main class="max-w-4xl mx-auto w-full px-4 pt-4 flex-1 space-y-4">
+    <section class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <!-- Avg Mileage -->
+      <div class="bg-white dark:bg-darkcard p-3.5 rounded-2xl border border-slate-200 dark:border-darkborder shadow-sm">
+        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
+          <span class="text-xs font-semibold uppercase tracking-wider">Avg Mileage</span>
+          <i class="ph-fill ph-drop text-amber-500 text-sm"></i>
+        </div>
+        <div class="flex items-baseline gap-1">
+          <span id="metricAvgMileage" class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">--</span>
+          <span class="text-xs text-slate-400">km/L</span>
+        </div>
+      </div>
+
+      <!-- Running Cost per km -->
+      <div class="bg-white dark:bg-darkcard p-3.5 rounded-2xl border border-slate-200 dark:border-darkborder shadow-sm">
+        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
+          <span class="text-xs font-semibold uppercase tracking-wider">Run Cost</span>
+          <i class="ph-fill ph-chart-line-up text-brand-500 text-sm"></i>
+        </div>
+        <div class="flex items-baseline gap-1">
+          <span class="text-xs text-slate-400">₹</span>
+          <span id="metricCostPerKm" class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">--</span>
+          <span class="text-xs text-slate-400">/km</span>
+        </div>
+      </div>
+
+      <!-- Last 30 Days Spend -->
+      <div class="bg-white dark:bg-darkcard p-3.5 rounded-2xl border border-slate-200 dark:border-darkborder shadow-sm">
+        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
+          <span class="text-xs font-semibold uppercase tracking-wider">30 Days</span>
+          <i class="ph-fill ph-calendar text-emerald-500 text-sm"></i>
+        </div>
+        <div class="flex items-baseline gap-1">
+          <span class="text-xs text-slate-400">₹</span>
+          <span id="metric30DaysSpend" class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">0</span>
+        </div>
+      </div>
+
+      <!-- Total Spend -->
+      <div class="bg-white dark:bg-darkcard p-3.5 rounded-2xl border border-slate-200 dark:border-darkborder shadow-sm">
+        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
+          <span class="text-xs font-semibold uppercase tracking-wider">Total Spend</span>
+          <i class="ph-fill ph-wallet text-indigo-500 text-sm"></i>
+        </div>
+        <div class="flex items-baseline gap-1">
+          <span class="text-xs text-slate-400">₹</span>
+          <span id="metricTotalSpend" class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">0</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-white dark:bg-darkcard rounded-2xl border border-slate-200 dark:border-darkborder p-3 flex flex-wrap items-center justify-between gap-2 shadow-sm">
+      <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+        <button onclick="setFilter('all')" id="filterBtn-all" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-brand-600 text-white transition-colors">All</button>
+        <button onclick="setFilter('fuel')" id="filterBtn-fuel" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">Fuel</button>
+        <button onclick="setFilter('service')" id="filterBtn-service" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">Service</button>
+        <button onclick="setFilter('expense')" id="filterBtn-expense" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">Expenses</button>
+      </div>
+
+      <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+        <button onclick="exportAllDataCSV()" class="flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors border border-slate-200 dark:border-darkborder">
+          <i class="ph-bold ph-export"></i>
+          <span>Export CSV</span>
+        </button>
+        <label class="flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer transition-colors border border-slate-200 dark:border-darkborder">
+          <i class="ph-bold ph-import"></i>
+          <span>Import</span>
+          <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="importAllDataCSV(event)" />
+        </label>
+      </div>
+    </section>
+
+    <section class="space-y-2.5">
+      <div class="flex items-center justify-between px-1">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Activity Logs</h2>
+        <span id="logCountBadge" class="text-xs font-medium text-slate-400">0 records</span>
+      </div>
+
+      <div id="logsFeedList" class="space-y-2.5">
+        <!-- Dynamic logs inserted here -->
+      </div>
+    </section>
+  </main>
+
+  <div class="fixed bottom-6 right-6 z-30">
+    <button onclick="openAddModal()" class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-600 to-indigo-500 hover:from-brand-700 hover:to-indigo-600 text-white shadow-xl shadow-brand-500/30 flex items-center justify-center text-2xl active:scale-95 transition-transform" title="Add New Log">
+      <i class="ph-bold ph-plus"></i>
+    </button>
   </div>
 
-  <!-- CSV Controls -->
-  <div class="action-bar">
-    <label class="action-btn primary">
-      📥 Import CSV
-      <input type="file" id="csvInput" accept=".csv" style="display:none;" onchange="handleCSVImport(event)">
-    </label>
-    <button class="action-btn" onclick="exportDataToCSV()">📤 Export Backup</button>
-  </div>
-
-  <!-- Navigation Tabs -->
-  <div class="nav-tabs">
-    <button class="nav-tab active" onclick="navigateTab('dashboard')">Home Feed</button>
-    <button class="nav-tab" onclick="navigateTab('fuel')">Fuel</button>
-    <button class="nav-tab" onclick="navigateTab('service')">Service</button>
-    <button class="nav-tab" onclick="navigateTab('expense')">Expenses</button>
-  </div>
-
-  <!-- ================= TAB: DASHBOARD (RECENT 10 LOGS) ================= -->
-  <div id="tab-dashboard" class="tab-content">
-    <div class="card">
-      <div class="card-title">Recent Activity (Last 10 Logs)</div>
-      <div id="recentActivityList"></div>
-    </div>
-  </div>
-
-  <!-- ================= TAB: FUEL HISTORY ================= -->
-  <div id="tab-fuel" class="tab-content" style="display:none;">
-    <div class="controls-bar">
-      <span>Fuel Logs</span>
-      <select class="sort-select" id="fuelSort" onchange="renderFuelList()">
-        <option value="date-desc">Date (Newest First)</option>
-        <option value="date-asc">Date (Oldest First)</option>
-        <option value="cost-desc">Cost (High to Low)</option>
-        <option value="cost-asc">Cost (Low to High)</option>
-        <option value="odo-desc">Odometer (High to Low)</option>
-      </select>
-    </div>
-    <div id="fuelHistoryList"></div>
-  </div>
-
-  <!-- ================= TAB: SERVICE HISTORY ================= -->
-  <div id="tab-service" class="tab-content" style="display:none;">
-    <div class="controls-bar">
-      <span>Service Records</span>
-      <select class="sort-select" id="servSort" onchange="renderServiceList()">
-        <option value="date-desc">Date (Newest First)</option>
-        <option value="date-asc">Date (Oldest First)</option>
-        <option value="cost-desc">Cost (High to Low)</option>
-        <option value="cost-asc">Cost (Low to High)</option>
-        <option value="odo-desc">Odometer (High to Low)</option>
-      </select>
-    </div>
-    <div id="serviceHistoryList"></div>
-  </div>
-
-  <!-- ================= TAB: EXPENSES HISTORY ================= -->
-  <div id="tab-expense" class="tab-content" style="display:none;">
-    <div class="controls-bar">
-      <span>General Expenses</span>
-      <select class="sort-select" id="expSort" onchange="renderExpenseList()">
-        <option value="date-desc">Date (Newest First)</option>
-        <option value="date-asc">Date (Oldest First)</option>
-        <option value="cost-desc">Cost (High to Low)</option>
-        <option value="cost-asc">Cost (Low to High)</option>
-      </select>
-    </div>
-    <div id="expenseHistoryList"></div>
-  </div>
-
-  <!-- Floating Action Button (+) -->
-  <button class="fab-btn" onclick="openLogModal()" title="Add New Entry">+</button>
-
-  <!-- ================= POPUP MODAL (ALL FORMS INSIDE POPUP) ================= -->
-  <div id="logModalOverlay" class="modal-overlay" onclick="closeLogModal(event)">
-    <div class="modal-sheet" onclick="event.stopPropagation()">
+  <div id="addModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white dark:bg-darkcard w-full max-w-lg rounded-t-3xl sm:rounded-3xl border border-slate-200 dark:border-darkborder shadow-2xl max-h-[92vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-200">
       
-      <!-- VIEW 1: CATEGORY SELECTION -->
-      <div id="modalSelectView">
-        <div class="modal-header-row">
-          <div class="modal-title">Log New Entry</div>
+      <!-- Modal Header -->
+      <div class="px-5 py-4 border-b border-slate-200 dark:border-darkborder flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white">Record New Entry</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Choose type and fill in the details</p>
         </div>
-        
-        <button class="action-option" onclick="showInlineForm('fuel')">
-          <div class="action-icon" style="background: #eff6ff; color: var(--primary);">⛽</div>
-          <div>
-            <div>Fuel Fill-Up</div>
-            <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Litres, price per litre, odometer</div>
-          </div>
+        <button onclick="closeAddModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">
+          <i class="ph-bold ph-x text-lg"></i>
         </button>
-
-        <button class="action-option" onclick="showInlineForm('service')">
-          <div class="action-icon" style="background: #fef3c7; color: var(--warning);">🔧</div>
-          <div>
-            <div>Service & Maintenance</div>
-            <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Cost, odometer, work done notes</div>
-          </div>
-        </button>
-
-        <button class="action-option" onclick="showInlineForm('expense')">
-          <div class="action-icon" style="background: #f3e8ff; color: var(--purple);">💳</div>
-          <div>
-            <div>General Expense</div>
-            <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Parking, Toll, Wash, Accessories, etc.</div>
-          </div>
-        </button>
-
-        <button class="modal-cancel" onclick="closeLogModal()">Cancel</button>
       </div>
 
-      <!-- VIEW 2: FUEL FORM INSIDE POPUP -->
-      <div id="modalFuelForm" style="display:none;">
-        <div class="modal-header-row">
-          <button class="btn-back" onclick="backToModalSelect()">← Back</button>
-          <div class="modal-title" style="font-size:1rem;">⛽ Fuel Fill-Up</div>
-          <span style="width:40px;"></span>
+      <!-- Type Tabs -->
+      <div class="p-3 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-darkborder">
+        <div class="grid grid-cols-3 gap-1 bg-slate-200/70 dark:bg-slate-800 p-1 rounded-2xl">
+          <button type="button" onclick="setAddType('fuel')" id="tab-fuel" class="py-2 rounded-xl text-xs font-bold transition-all bg-white dark:bg-darkcard text-brand-600 dark:text-white shadow-sm flex items-center justify-center gap-1.5">
+            <i class="ph-fill ph-drop text-amber-500"></i> Fuel
+          </button>
+          <button type="button" onclick="setAddType('service')" id="tab-service" class="py-2 rounded-xl text-xs font-bold transition-all text-slate-600 dark:text-slate-400 flex items-center justify-center gap-1.5">
+            <i class="ph-fill ph-wrench text-blue-500"></i> Service
+          </button>
+          <button type="button" onclick="setAddType('expense')" id="tab-expense" class="py-2 rounded-xl text-xs font-bold transition-all text-slate-600 dark:text-slate-400 flex items-center justify-center gap-1.5">
+            <i class="ph-fill ph-receipt text-emerald-500"></i> Expense
+          </button>
         </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Date</label>
-            <input type="date" id="fuelDate">
-          </div>
-          <div class="form-group">
-            <label>Odometer (km)</label>
-            <input type="number" id="fuelOdo" placeholder="e.g. 2643">
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Quantity (Litres)</label>
-            <input type="number" step="0.01" id="fuelQty" placeholder="e.g. 10.50" oninput="calculateFuelPrice('qty')">
-          </div>
-          <div class="form-group">
-            <label>Price / Litre (₹)</label>
-            <input type="number" step="0.01" id="fuelPriceUnit" placeholder="e.g. 102.80" oninput="calculateFuelPrice('unit')">
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Total Cost (₹)</label>
-          <input type="number" step="0.01" id="fuelTotalCost" placeholder="e.g. 1080.00" oninput="calculateFuelPrice('total')">
-        </div>
-
-        <div class="toggle-container">
-          <span class="toggle-label">Full Tank Fill-up</span>
-          <label class="switch">
-            <input type="checkbox" id="fuelFullTank">
-            <span class="slider"></span>
-          </label>
-        </div>
-
-        <button class="btn-submit" onclick="addFuelRecord()">Save Fuel Entry</button>
-        <button class="modal-cancel" onclick="closeLogModal()">Cancel</button>
       </div>
 
-      <!-- VIEW 3: SERVICE FORM INSIDE POPUP -->
-      <div id="modalServiceForm" style="display:none;">
-        <div class="modal-header-row">
-          <button class="btn-back" onclick="backToModalSelect()">← Back</button>
-          <div class="modal-title" style="font-size:1rem;">🔧 Service & Maintenance</div>
-          <span style="width:40px;"></span>
-        </div>
+      <!-- Modal Body Form -->
+      <form id="addEntryForm" onsubmit="handleSaveEntry(event)" class="p-5 overflow-y-auto space-y-4">
+        <input type="hidden" id="entryType" value="fuel" />
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>Date</label>
-            <input type="date" id="servDate">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Date</label>
+            <input type="date" id="entryDate" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-darkborder bg-white dark:bg-slate-900/80 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-800 dark:text-slate-100" />
           </div>
-          <div class="form-group">
-            <label>Odometer (km)</label>
-            <input type="number" id="servOdo" placeholder="e.g. 3000">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Odometer (km)</label>
+            <input type="number" id="entryOdo" placeholder="e.g. 45210" step="any" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-darkborder bg-white dark:bg-slate-900/80 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-800 dark:text-slate-100" />
           </div>
         </div>
 
-        <div class="form-group">
-          <label>Service Cost (₹)</label>
-          <input type="number" step="0.01" id="servCost" placeholder="e.g. 1650.00">
-        </div>
-
-        <div class="form-group">
-          <label>Work Done / Notes</label>
-          <textarea id="servNotes" rows="2" placeholder="e.g. Oil change, chain maintenance, air filter"></textarea>
-        </div>
-
-        <button class="btn-submit warning" onclick="addServiceRecord()">Save Service Entry</button>
-        <button class="modal-cancel" onclick="closeLogModal()">Cancel</button>
-      </div>
-
-      <!-- VIEW 4: EXPENSE FORM INSIDE POPUP -->
-      <div id="modalExpenseForm" style="display:none;">
-        <div class="modal-header-row">
-          <button class="btn-back" onclick="backToModalSelect()">← Back</button>
-          <div class="modal-title" style="font-size:1rem;">💳 General Expense</div>
-          <span style="width:40px;"></span>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Date</label>
-            <input type="date" id="expDate">
+        <!-- Fuel Fields -->
+        <div id="fieldsFuel" class="space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Volume (Litres)</label>
+              <input type="number" step="any" id="fuelLitres" placeholder="e.g. 35.5" oninput="calculateFuelCost()" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-darkborder bg-white dark:bg-slate-900/80 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-800 dark:text-slate-100" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Price / Litre (₹)</label>
+              <input type="number" step="any" id="fuelRate" placeholder="e.g. 96.7" oninput="calculateFuelCost()" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-darkborder bg-white dark:bg-slate-900/80 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-800 dark:text-slate-100" />
+            </div>
           </div>
-          <div class="form-group">
-            <label>Category</label>
-            <select id="expCategory">
-              <option value="Parking">Parking</option>
-              <option value="Toll">Toll</option>
-              <option value="Wash & Clean">Wash & Detailing</option>
-              <option value="Accessories">Accessories</option>
-              <option value="Challan">Challan / Fine</option>
-              <option value="Repairs">Repairs & Parts</option>
-              <option value="Other">Other</option>
+
+          <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-darkborder">
+            <div class="flex items-center gap-2">
+              <i class="ph-bold ph-gas-can text-amber-500 text-lg"></i>
+              <span class="text-xs font-semibold">Full Tank Fill-up</span>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="fuelFullTank" checked class="sr-only peer">
+              <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Service Fields -->
+        <div id="fieldsService" class="space-y-3 hidden">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Service Type</label>
+            <select id="serviceCategory" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-darkborder bg-white dark:bg-slate-900/80 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-800 dark:text-slate-100">
+              <option value="Periodic Maintenance">Periodic General Service</option>
+              <option value="Engine Oil & Filter">Engine Oil & Filter Change</option>
+              <option value="Brake System">Brake Pad / Shoes Overhaul</option>
+              <option value="Tire & Alignment">Tire Replacement & Alignment</option>
+              <option value="Battery / Electrical">Battery & Electrical</option>
+              <option value="Hydraulic Maintenance">Hydraulic / Heavy Spares</option>
+              <option value="Other Service">Other Maintenance</option>
             </select>
           </div>
         </div>
 
-        <div class="form-group">
-          <label>Amount (₹)</label>
-          <input type="number" step="0.01" id="expCost" placeholder="e.g. 150.00">
+        <!-- General Expense Fields -->
+        <div id="fieldsExpense" class="space-y-3 hidden">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Expense Category</label>
+            <select id="expenseCategory" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-darkborder bg-white dark:bg-slate-900/80 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-800 dark:text-slate-100">
+              <option value="Toll Tax">Toll Tax / Fastag</option>
+              <option value="Parking">Parking Fee</option>
+              <option value="Washing & Cleaning">Washing & Detailing</option>
+              <option value="Traffic Challan">Traffic Challan / Fine</option>
+              <option value="Driver Allowance">Driver / Helper Bata</option>
+              <option value="Miscellaneous">Miscellaneous</option>
+            </select>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label>Notes / Remarks</label>
-          <input type="text" id="expNotes" placeholder="e.g. Parking ticket, visor cleaner, etc.">
+        <!-- Total Amount -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Total Cost (₹) *</label>
+          <input type="number" step="any" id="entryCost" required placeholder="0.00" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-darkborder bg-white dark:bg-slate-900/80 text-base font-bold focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white" />
         </div>
 
-        <button class="btn-submit purple" onclick="addExpenseRecord()">Save Expense Entry</button>
-        <button class="modal-cancel" onclick="closeLogModal()">Cancel</button>
-      </div>
+        <!-- Notes (with wrapped preview hint) -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Remarks / Notes</label>
+          <textarea id="entryNotes" rows="2" placeholder="e.g. Indian Oil Pump, Sector 12. Slip no 4912" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-darkborder bg-white dark:bg-slate-900/80 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-800 dark:text-slate-100 wrap-note"></textarea>
+        </div>
 
+        <div class="pt-2">
+          <button type="submit" class="w-full py-3.5 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-lg shadow-brand-500/25 active:scale-[0.98] transition-transform">
+            Save Entry
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
-  <script>
-    // Network-First auto-update registration
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js').then((reg) => {
-        reg.update();
-      });
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        window.location.reload();
-      });
-    }
-
-    // Default dates to today
-    const todayStr = new Date().toISOString().split('T')[0];
-    document.getElementById('fuelDate').value = todayStr;
-    document.getElementById('servDate').value = todayStr;
-    document.getElementById('expDate').value = todayStr;
-
-    // Local Storage Data Structures
-    let fuelData = JSON.parse(localStorage.getItem('fuelData')) || [];
-    let serviceData = JSON.parse(localStorage.getItem('serviceData')) || [];
-    let expenseData = JSON.parse(localStorage.getItem('expenseData')) || [];
-
-    // Modal Control & View Switching
-    function openLogModal() {
-      backToModalSelect();
-      document.getElementById('logModalOverlay').style.display = 'flex';
-    }
-
-    function closeLogModal(e) {
-      if (e && e.target !== e.currentTarget && !e.target.classList.contains('modal-cancel')) return;
-      document.getElementById('logModalOverlay').style.display = 'none';
-      backToModalSelect();
-    }
-
-    function backToModalSelect() {
-      document.getElementById('modalSelectView').style.display = 'block';
-      document.getElementById('modalFuelForm').style.display = 'none';
-      document.getElementById('modalServiceForm').style.display = 'none';
-      document.getElementById('modalExpenseForm').style.display = 'none';
-    }
-
-    function showInlineForm(type) {
-      document.getElementById('modalSelectView').style.display = 'none';
-      document.getElementById('modalFuelForm').style.display = (type === 'fuel') ? 'block' : 'none';
-      document.getElementById('modalServiceForm').style.display = (type === 'service') ? 'block' : 'none';
-      document.getElementById('modalExpenseForm').style.display = (type === 'expense') ? 'block' : 'none';
-    }
-
-    // Tab Navigation
-    function navigateTab(tabKey) {
-      const tabs = ['dashboard', 'fuel', 'service', 'expense'];
-      tabs.forEach((key, idx) => {
-        const active = key === tabKey;
-        document.getElementById(`tab-${key}`).style.display = active ? 'block' : 'none';
-        document.querySelectorAll('.nav-tab')[idx].classList.toggle('active', active);
-      });
-      refreshAll();
-    }
-
-    // Smart Fuel Price calculator
-    function calculateFuelPrice(trigger) {
-      const qty = parseFloat(document.getElementById('fuelQty').value);
-      const unit = parseFloat(document.getElementById('fuelPriceUnit').value);
-      const total = parseFloat(document.getElementById('fuelTotalCost').value);
-
-      if (trigger === 'qty' || trigger === 'unit') {
-        if (!isNaN(qty) && !isNaN(unit)) {
-          document.getElementById('fuelTotalCost').value = (qty * unit).toFixed(2);
-        }
-      } else if (trigger === 'total') {
-        if (!isNaN(total) && !isNaN(qty) && qty > 0) {
-          document.getElementById('fuelPriceUnit').value = (total / qty).toFixed(2);
-        }
-      }
-    }
-
-    // Add Fuel Record
-    function addFuelRecord() {
-      const date = document.getElementById('fuelDate').value;
-      const odo = parseFloat(document.getElementById('fuelOdo').value);
-      const qty = parseFloat(document.getElementById('fuelQty').value);
-      const unit = parseFloat(document.getElementById('fuelPriceUnit').value) || 0;
-      const cost = parseFloat(document.getElementById('fuelTotalCost').value);
-      const fullTank = document.getElementById('fuelFullTank').checked;
-
-      if (!date || isNaN(odo) || isNaN(qty) || isNaN(cost)) {
-        return alert("Please fill all required fuel details (Date, Odometer, Quantity, Total Cost).");
-      }
-
-      fuelData.push({
-        id: Date.now(),
-        type: 'fuel',
-        date,
-        odo,
-        qty,
-        unit: unit || (cost / qty),
-        cost,
-        fullTank,
-        createdTime: Date.now()
-      });
-
-      localStorage.setItem('fuelData', JSON.stringify(fuelData));
+  <div id="detailsModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white dark:bg-darkcard w-full max-w-lg rounded-t-3xl sm:rounded-3xl border border-slate-200 dark:border-darkborder shadow-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-200">
       
-      document.getElementById('fuelOdo').value = '';
-      document.getElementById('fuelQty').value = '';
-      document.getElementById('fuelPriceUnit').value = '';
-      document.getElementById('fuelTotalCost').value = '';
-      document.getElementById('fuelFullTank').checked = false;
+      <div class="px-5 py-4 border-b border-slate-200 dark:border-darkborder flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div id="detailTypeBadge" class="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold"></div>
+          <div>
+            <h3 id="detailTitle" class="text-base font-bold text-slate-900 dark:text-white">Log Details</h3>
+            <p id="detailSubtitle" class="text-xs text-slate-400">Captured on record</p>
+          </div>
+        </div>
+        <button onclick="closeDetailsModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">
+          <i class="ph-bold ph-x text-lg"></i>
+        </button>
+      </div>
 
-      refreshAll();
-      document.getElementById('logModalOverlay').style.display = 'none';
-      backToModalSelect();
-      alert("Fuel entry added successfully!");
-    }
+      <div class="p-5 overflow-y-auto space-y-4">
+        <!-- Cost Highlight -->
+        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-darkborder flex items-center justify-between">
+          <div>
+            <span class="text-xs text-slate-400 uppercase font-semibold">Total Amount</span>
+            <div class="text-2xl font-black text-slate-900 dark:text-white">₹<span id="detailCost">0</span></div>
+          </div>
+          <div id="detailTag" class="px-3 py-1 rounded-full text-xs font-bold"></div>
+        </div>
 
-    // Add Service Record
-    function addServiceRecord() {
-      const date = document.getElementById('servDate').value;
-      const odo = parseFloat(document.getElementById('servOdo').value);
-      const cost = parseFloat(document.getElementById('servCost').value) || 0;
-      const notes = document.getElementById('servNotes').value.trim();
+        <!-- Key Value Table -->
+        <div class="space-y-2.5 text-sm divide-y divide-slate-100 dark:divide-darkborder/50">
+          <div class="pt-2 flex justify-between">
+            <span class="text-slate-400">Date</span>
+            <span id="detailDate" class="font-medium text-slate-700 dark:text-slate-200">--</span>
+          </div>
 
-      if (!date || isNaN(odo)) {
-        return alert("Please fill Date and Odometer reading.");
-      }
+          <div id="rowOdo" class="pt-2 flex justify-between">
+            <span class="text-slate-400">Odometer Reading</span>
+            <span id="detailOdo" class="font-medium text-slate-700 dark:text-slate-200">--</span>
+          </div>
 
-      serviceData.push({
-        id: Date.now(),
-        type: 'service',
-        date,
-        odo,
-        cost,
-        notes: notes || 'General Maintenance',
-        createdTime: Date.now()
-      });
+          <div id="rowCalculatedMileage" class="pt-2 flex justify-between hidden">
+            <span class="text-slate-400">Calculated Trip Mileage</span>
+            <span id="detailMileage" class="font-bold text-emerald-500">-- km/L</span>
+          </div>
 
-      localStorage.setItem('serviceData', JSON.stringify(serviceData));
+          <div id="rowFuelQty" class="pt-2 flex justify-between hidden">
+            <span class="text-slate-400">Fuel Quantity</span>
+            <span id="detailFuelQty" class="font-medium text-slate-700 dark:text-slate-200">--</span>
+          </div>
 
-      document.getElementById('servOdo').value = '';
-      document.getElementById('servCost').value = '';
-      document.getElementById('servNotes').value = '';
+          <div id="rowFuelRate" class="pt-2 flex justify-between hidden">
+            <span class="text-slate-400">Rate / Litre</span>
+            <span id="detailFuelRate" class="font-medium text-slate-700 dark:text-slate-200">--</span>
+          </div>
 
-      refreshAll();
-      document.getElementById('logModalOverlay').style.display = 'none';
-      backToModalSelect();
-      alert("Service entry added successfully!");
-    }
+          <div id="rowCategory" class="pt-2 flex justify-between hidden">
+            <span class="text-slate-400">Category</span>
+            <span id="detailCategory" class="font-medium text-slate-700 dark:text-slate-200">--</span>
+          </div>
+        </div>
 
-    // Add General Expense Record
-    function addExpenseRecord() {
-      const date = document.getElementById('expDate').value;
-      const category = document.getElementById('expCategory').value;
-      const cost = parseFloat(document.getElementById('expCost').value);
-      const notes = document.getElementById('expNotes').value.trim();
+        <!-- Notes Section (Safe wrap fix) -->
+        <div class="pt-2">
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Notes & Remarks</label>
+          <div id="detailNotes" class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-darkborder text-xs leading-relaxed text-slate-700 dark:text-slate-300 wrap-note">
+            No notes added.
+          </div>
+        </div>
 
-      if (!date || isNaN(cost) || cost <= 0) {
-        return alert("Please fill Date and a valid Amount.");
-      }
+        <!-- Action Buttons -->
+        <div class="pt-3 flex gap-2">
+          <button id="copyDetailBtn" onclick="copyCurrentLogDetails()" class="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-darkborder bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 font-semibold text-xs text-slate-700 dark:text-slate-200 flex items-center justify-center gap-1.5 transition-colors">
+            <i class="ph-bold ph-copy"></i> Copy Details
+          </button>
+          <button id="deleteDetailBtn" onclick="deleteCurrentLog()" class="py-2.5 px-4 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors">
+            <i class="ph-bold ph-trash"></i> Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-      expenseData.push({
-        id: Date.now(),
-        type: 'expense',
-        date,
-        category,
-        cost,
-        notes,
-        createdTime: Date.now()
-      });
+  <div id="settingsModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white dark:bg-darkcard w-full max-w-md rounded-t-3xl sm:rounded-3xl border border-slate-200 dark:border-darkborder shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-200">
+      
+      <div class="px-5 py-4 border-b border-slate-200 dark:border-darkborder flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center">
+            <i class="ph-bold ph-gear text-lg"></i>
+          </div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white">Settings & Backups</h3>
+        </div>
+        <button onclick="closeSettingsModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">
+          <i class="ph-bold ph-x text-lg"></i>
+        </button>
+      </div>
 
-      localStorage.setItem('expenseData', JSON.stringify(expenseData));
+      <div class="p-5 space-y-5">
+        <!-- Auto Backup Interval Selection -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-bold text-slate-800 dark:text-slate-100">Automatic Backup</span>
+            <span id="lastBackupLabel" class="text-[11px] text-slate-400">Never</span>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400 leading-normal">
+            VehIQ will automatically create a backup file and download it to your device storage based on your selected interval.
+          </p>
 
-      document.getElementById('expCost').value = '';
-      document.getElementById('expNotes').value = '';
+          <select id="autoBackupInterval" onchange="handleBackupIntervalChange(this.value)" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-darkborder bg-slate-50 dark:bg-slate-900/80 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-800 dark:text-slate-100">
+            <option value="off">Off (Manual Only)</option>
+            <option value="1">Every 1 Day</option>
+            <option value="7">Every 7 Days (1 Week)</option>
+            <option value="15">Every 15 Days</option>
+          </select>
+        </div>
 
-      refreshAll();
-      document.getElementById('logModalOverlay').style.display = 'none';
-      backToModalSelect();
-      alert("Expense entry added successfully!");
-    }
+        <!-- Manual Backup Action -->
+        <div class="pt-3 border-t border-slate-100 dark:border-darkborder flex flex-col gap-2">
+          <button onclick="triggerImmediateBackup()" class="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-sm transition-colors">
+            <i class="ph-bold ph-download-simple"></i> Download Full Backup Now (.json)
+          </button>
+          
+          <button onclick="clearAllDataWithConfirmation()" class="w-full py-2 rounded-xl text-rose-500 hover:bg-rose-500/10 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors">
+            <i class="ph-bold ph-trash"></i> Reset All Stored Logs
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    // Delete Record
-    function deleteRecord(category, id) {
-      if (!confirm("Are you sure you want to delete this entry?")) return;
-      if (category === 'fuel') {
-        fuelData = fuelData.filter(i => i.id !== id);
-        localStorage.setItem('fuelData', JSON.stringify(fuelData));
-      } else if (category === 'service') {
-        serviceData = serviceData.filter(i => i.id !== id);
-        localStorage.setItem('serviceData', JSON.stringify(serviceData));
+  <div id="toastNotification" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-2.5 rounded-2xl shadow-xl text-xs font-semibold flex items-center gap-2 transition-all duration-300 opacity-0 pointer-events-none translate-y-3">
+    <i id="toastIcon" class="ph-bold ph-check-circle text-emerald-400 dark:text-emerald-600 text-base"></i>
+    <span id="toastMsg">Action completed</span>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'vehiq_logs_v2';
+    const THEME_KEY = 'vehiq_theme_pref';
+    const AUTO_BACKUP_KEY = 'vehiq_auto_backup_config';
+
+    let currentFilter = 'all';
+    let activeLogId = null;
+    let logs = [];
+
+    // Auto-Backup Configuration structure
+    let backupConfig = {
+      intervalDays: 7, // Default 1 week
+      lastBackupTimestamp: 0
+    };
+
+    function initTheme() {
+      const savedTheme = localStorage.getItem(THEME_KEY);
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      
+      if (savedTheme === 'light') {
+        document.documentElement.classList.remove('dark');
+        updateThemeIcon(false);
+      } else if (savedTheme === 'dark' || prefersDark) {
+        document.documentElement.classList.add('dark');
+        updateThemeIcon(true);
       } else {
-        expenseData = expenseData.filter(i => i.id !== id);
-        localStorage.setItem('expenseData', JSON.stringify(expenseData));
+        document.documentElement.classList.add('dark');
+        updateThemeIcon(true);
       }
-      refreshAll();
     }
 
-    // Sort Helper Function
-    function sortRecords(list, criteria) {
-      const cloned = [...list];
-      return cloned.sort((a, b) => {
-        if (criteria === 'date-desc') {
-          return (b.date.localeCompare(a.date)) || ((b.createdTime || b.id) - (a.createdTime || a.id));
-        }
-        if (criteria === 'date-asc') {
-          return (a.date.localeCompare(b.date)) || ((a.createdTime || a.id) - (b.createdTime || b.id));
-        }
-        if (criteria === 'cost-desc') return (b.cost || 0) - (a.cost || 0);
-        if (criteria === 'cost-asc') return (a.cost || 0) - (b.cost || 0);
-        if (criteria === 'odo-desc') return (b.odo || 0) - (a.odo || 0);
-        return 0;
-      });
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+      updateThemeIcon(isDark);
+      showToast(isDark ? 'Dark theme enabled' : 'Light theme enabled', 'ph-moon');
     }
 
-    // Refresh metrics & all lists
-    function refreshAll() {
-      computeMetrics();
+    function updateThemeIcon(isDark) {
+      const icon = document.getElementById('themeIcon');
+      if (isDark) {
+        icon.className = 'ph-bold ph-sun text-amber-400 text-lg';
+      } else {
+        icon.className = 'ph-bold ph-moon text-slate-700 text-lg';
+      }
+    }
+
+    function loadLogs() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        logs = stored ? JSON.parse(stored) : [];
+      } catch (err) {
+        console.error('Failed reading logs', err);
+        logs = [];
+      }
+
+      // Load backup config
+      try {
+        const conf = localStorage.getItem(AUTO_BACKUP_KEY);
+        if (conf) backupConfig = JSON.parse(conf);
+      } catch (e) {}
+
+      updateBackupUI();
+      checkAndRunAutoBackup();
+    }
+
+    function saveLogs() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
       renderDashboard();
-      renderFuelList();
-      renderServiceList();
-      renderExpenseList();
+      checkAndRunAutoBackup();
     }
 
-    // Metrics Calculation
-    function computeMetrics() {
-      const sortedFuelByOdo = [...fuelData].sort((a, b) => a.odo - b.odo);
-      if (sortedFuelByOdo.length >= 2) {
-        const totalKm = sortedFuelByOdo[sortedFuelByOdo.length - 1].odo - sortedFuelByOdo[0].odo;
-        const totalLitres = sortedFuelByOdo.slice(1).reduce((acc, cur) => acc + (cur.qty || 0), 0);
-        const fuelSpend = sortedFuelByOdo.slice(1).reduce((acc, cur) => acc + (cur.cost || 0), 0);
+    function checkAndRunAutoBackup() {
+      if (backupConfig.intervalDays === 'off' || logs.length === 0) return;
 
-        if (totalKm > 0 && totalLitres > 0) {
-          document.getElementById('valMileage').innerText = `${(totalKm / totalLitres).toFixed(2)} km/L`;
-          document.getElementById('valCostPerKm').innerText = `₹${(fuelSpend / totalKm).toFixed(2)}/km`;
+      const now = Date.now();
+      const intervalMs = Number(backupConfig.intervalDays) * 24 * 60 * 60 * 1000;
+      
+      if (!backupConfig.lastBackupTimestamp || (now - backupConfig.lastBackupTimestamp) >= intervalMs) {
+        // Trigger auto backup silently
+        triggerSilentBackup();
+        backupConfig.lastBackupTimestamp = now;
+        localStorage.setItem(AUTO_BACKUP_KEY, JSON.stringify(backupConfig));
+        updateBackupUI();
+        showToast('Auto-backup downloaded to device', 'ph-cloud-check');
+      }
+    }
+
+    function triggerSilentBackup() {
+      const exportBlob = new Blob([JSON.stringify({ version: '2.0', exportedAt: new Date().toISOString(), logs }, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(exportBlob);
+      const dateStr = new Date().toISOString().split('T')[0];
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `vehiq_autobackup_${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function triggerImmediateBackup() {
+      triggerSilentBackup();
+      backupConfig.lastBackupTimestamp = Date.now();
+      localStorage.setItem(AUTO_BACKUP_KEY, JSON.stringify(backupConfig));
+      updateBackupUI();
+      showToast('Full backup downloaded', 'ph-download-simple');
+    }
+
+    function handleBackupIntervalChange(val) {
+      backupConfig.intervalDays = val === 'off' ? 'off' : Number(val);
+      localStorage.setItem(AUTO_BACKUP_KEY, JSON.stringify(backupConfig));
+      showToast(val === 'off' ? 'Auto-backup disabled' : `Auto-backup set for ${val} days`, 'ph-gear');
+    }
+
+    function updateBackupUI() {
+      const select = document.getElementById('autoBackupInterval');
+      if (select) select.value = backupConfig.intervalDays.toString();
+
+      const label = document.getElementById('lastBackupLabel');
+      if (label) {
+        if (backupConfig.lastBackupTimestamp) {
+          const d = new Date(backupConfig.lastBackupTimestamp);
+          label.textContent = `Last: ${d.toLocaleDateString()}`;
+        } else {
+          label.textContent = 'Never backed up';
         }
-      } else {
-        document.getElementById('valMileage').innerText = '--';
-        document.getElementById('valCostPerKm').innerText = '--';
+      }
+    }
+
+    function renderDashboard() {
+      // 1. Sort logs chronologically
+      logs.sort((a, b) => new Date(b.date) - new Date(a.date) || (b.odometer || 0) - (a.odometer || 0));
+
+      // Calculate totals
+      let totalSpend = 0;
+      let thirtyDaysSpend = 0;
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+
+      logs.forEach(log => {
+        const cost = Number(log.cost) || 0;
+        totalSpend += cost;
+        const logDate = new Date(log.date);
+        if (logDate >= thirtyDaysAgo) {
+          thirtyDaysSpend += cost;
+        }
+      });
+
+      // Mileage calculation (Consecutive full tank fuel logs)
+      const fuelLogsAsc = logs
+        .filter(l => l.type === 'fuel' && l.odometer && l.litres)
+        .sort((a, b) => (Number(a.odometer) - Number(b.odometer)));
+
+      let totalCalculatedDistance = 0;
+      let totalCalculatedFuel = 0;
+
+      for (let i = 1; i < fuelLogsAsc.length; i++) {
+        const prev = fuelLogsAsc[i - 1];
+        const curr = fuelLogsAsc[i];
+        const dist = Number(curr.odometer) - Number(prev.odometer);
+        const fuel = Number(curr.litres);
+
+        if (dist > 0 && fuel > 0) {
+          curr._calculatedMileage = (dist / fuel).toFixed(1);
+          if (curr.fullTank && prev.fullTank) {
+            totalCalculatedDistance += dist;
+            totalCalculatedFuel += fuel;
+          }
+        }
       }
 
-      const sumFuel = fuelData.reduce((acc, cur) => acc + (cur.cost || 0), 0);
-      const sumService = serviceData.reduce((acc, cur) => acc + (cur.cost || 0), 0);
-      const sumExpense = expenseData.reduce((acc, cur) => acc + (cur.cost || 0), 0);
-      const totalAll = sumFuel + sumService + sumExpense;
-      document.getElementById('valTotalSpend').innerText = `₹${totalAll.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+      const avgMileage = totalCalculatedFuel > 0 
+        ? (totalCalculatedDistance / totalCalculatedFuel).toFixed(1) 
+        : '--';
 
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const cutoffStr = thirtyDaysAgo.toISOString().split('T')[0];
+      // Cost per km calculation
+      let runningCostPerKm = '--';
+      if (fuelLogsAsc.length >= 2) {
+        const minOdo = Number(fuelLogsAsc[0].odometer);
+        const maxOdo = Number(fuelLogsAsc[fuelLogsAsc.length - 1].odometer);
+        const totalKm = maxOdo - minOdo;
+        if (totalKm > 0) {
+          runningCostPerKm = (totalSpend / totalKm).toFixed(2);
+        }
+      }
 
-      const monthFuel = fuelData.filter(i => i.date >= cutoffStr).reduce((acc, cur) => acc + (cur.cost || 0), 0);
-      const monthServ = serviceData.filter(i => i.date >= cutoffStr).reduce((acc, cur) => acc + (cur.cost || 0), 0);
-      const monthExp = expenseData.filter(i => i.date >= cutoffStr).reduce((acc, cur) => acc + (cur.cost || 0), 0);
-      const monthTotal = monthFuel + monthServ + monthExp;
+      // Update UI elements
+      document.getElementById('metricTotalSpend').textContent = totalSpend.toLocaleString('en-IN');
+      document.getElementById('metric30DaysSpend').textContent = thirtyDaysSpend.toLocaleString('en-IN');
+      document.getElementById('metricAvgMileage').textContent = avgMileage;
+      document.getElementById('metricCostPerKm').textContent = runningCostPerKm;
 
-      document.getElementById('valMonthSpend').innerText = `₹${monthTotal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+      renderLogsList();
     }
 
-    // Render Home Feed (Last 10 Logs sorted by date & time desc)
-    function renderDashboard() {
-      const unified = [
-        ...fuelData.map(i => ({ ...i, section: 'fuel' })),
-        ...serviceData.map(i => ({ ...i, section: 'service' })),
-        ...expenseData.map(i => ({ ...i, section: 'expense' }))
-      ];
+    function renderLogsList() {
+      const container = document.getElementById('logsFeedList');
+      const filtered = logs.filter(l => currentFilter === 'all' || l.type === currentFilter);
+      
+      document.getElementById('logCountBadge').textContent = `${filtered.length} records`;
 
-      unified.sort((a, b) => (b.date.localeCompare(a.date)) || ((b.createdTime || b.id) - (a.createdTime || a.id)));
-
-      const recentTen = unified.slice(0, 10);
-      const container = document.getElementById('recentActivityList');
-
-      if (recentTen.length === 0) {
-        container.innerHTML = `<div class="empty-state">No activities logged yet. Import your CSV or tap + to add entries.</div>`;
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 text-center bg-white dark:bg-darkcard rounded-2xl border border-slate-200 dark:border-darkborder">
+            <i class="ph-duotone ph-notebook text-4xl text-slate-300 dark:text-slate-600 mb-2 inline-block"></i>
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">No logs found in this category.</p>
+            <p class="text-xs text-slate-400 mt-0.5">Tap the "+" button to record an entry.</p>
+          </div>
+        `;
         return;
       }
 
-      container.innerHTML = recentTen.map(item => {
-        if (item.section === 'fuel') {
-          return `
-            <div class="entry-card">
-              <div class="entry-header">
-                <span class="entry-title">⛽ Fuel Fill-Up</span>
-                <span class="entry-cost">₹${item.cost.toFixed(2)}</span>
-              </div>
-              <div class="entry-meta">
-                <span>📅 ${item.date}</span>
-                <span>🛣️ ${item.odo} km</span>
-                <span>⛽ ${item.qty} L (@₹${item.unit.toFixed(2)})</span>
-                ${item.fullTank ? '<span class="badge badge-full">Full Tank</span>' : ''}
-              </div>
-            </div>`;
-        } else if (item.section === 'service') {
-          return `
-            <div class="entry-card service-entry">
-              <div class="entry-header">
-                <span class="entry-title">🔧 ${item.notes || 'Service'}</span>
-                <span class="entry-cost">₹${item.cost.toFixed(2)}</span>
-              </div>
-              <div class="entry-meta">
-                <span>📅 ${item.date}</span>
-                <span>🛣️ ${item.odo} km</span>
-              </div>
-            </div>`;
+      container.innerHTML = filtered.map(log => {
+        let badgeColor = '';
+        let icon = '';
+        let primaryDetail = '';
+
+        if (log.type === 'fuel') {
+          badgeColor = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
+          icon = 'ph-fill ph-drop';
+          primaryDetail = `${log.litres || 0} L ${log.fullTank ? '• Full Tank' : ''}`;
+        } else if (log.type === 'service') {
+          badgeColor = 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
+          icon = 'ph-fill ph-wrench';
+          primaryDetail = log.category || 'Service';
         } else {
-          return `
-            <div class="entry-card expense-entry">
-              <div class="entry-header">
-                <span class="entry-title"><span class="badge badge-expense">${item.category}</span> ${item.notes || ''}</span>
-                <span class="entry-cost">₹${item.cost.toFixed(2)}</span>
-              </div>
-              <div class="entry-meta">
-                <span>📅 ${item.date}</span>
-              </div>
-            </div>`;
+          badgeColor = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+          icon = 'ph-fill ph-receipt';
+          primaryDetail = log.category || 'General Expense';
         }
+
+        const dateFormatted = new Date(log.date).toLocaleDateString('en-IN', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric'
+        });
+
+        const hasNotes = log.notes && log.notes.trim().length > 0;
+
+        return `
+          <div onclick="openDetailsModal('${log.id}')" class="p-3.5 bg-white dark:bg-darkcard hover:bg-slate-50 dark:hover:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-darkborder shadow-sm cursor-pointer transition-all active:scale-[0.99] flex flex-col gap-2">
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg border ${badgeColor} shrink-0">
+                  <i class="${icon}"></i>
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-100">${log.type}</span>
+                    <span class="text-[11px] text-slate-400">• ${dateFormatted}</span>
+                  </div>
+                  <div class="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">
+                    ${primaryDetail} ${log.odometer ? `• ${Number(log.odometer).toLocaleString('en-IN')} km` : ''}
+                  </div>
+                </div>
+              </div>
+
+              <div class="text-right shrink-0">
+                <div class="text-base font-bold text-slate-900 dark:text-white">
+                  ₹${Number(log.cost || 0).toLocaleString('en-IN')}
+                </div>
+                ${log._calculatedMileage ? `<div class="text-[11px] font-semibold text-emerald-500">${log._calculatedMileage} km/L</div>` : ''}
+              </div>
+            </div>
+
+            <!-- Notes line with boundary wrap fix -->
+            ${hasNotes ? `
+              <div class="pt-2 border-t border-slate-100 dark:border-darkborder/50 text-xs text-slate-600 dark:text-slate-300 wrap-note line-clamp-2">
+                <i class="ph-bold ph-note text-slate-400 mr-1 inline"></i>${escapeHtml(log.notes)}
+              </div>
+            ` : ''}
+          </div>
+        `;
       }).join('');
     }
 
-    // Render Fuel List
-    function renderFuelList() {
-      const sortType = document.getElementById('fuelSort').value;
-      const sorted = sortRecords(fuelData, sortType);
-      const container = document.getElementById('fuelHistoryList');
-
-      if (sorted.length === 0) {
-        container.innerHTML = `<div class="empty-state">No fuel entries found. Tap + to add.</div>`;
+    function exportAllDataCSV() {
+      if (logs.length === 0) {
+        showToast('No logs to export', 'ph-warning');
         return;
       }
 
-      container.innerHTML = sorted.map(item => `
-        <div class="entry-card">
-          <div class="entry-header">
-            <span class="entry-title">🛣️ ${item.odo} km</span>
-            <span class="entry-cost">₹${item.cost.toFixed(2)}</span>
-          </div>
-          <div class="entry-meta">
-            <span>📅 ${item.date}</span>
-            <span>⛽ ${item.qty} L</span>
-            <span>₹${item.unit ? item.unit.toFixed(2) : (item.cost / item.qty).toFixed(2)}/L</span>
-            ${item.fullTank ? '<span class="badge badge-full">Full Tank</span>' : ''}
-          </div>
-          <button class="btn-delete" onclick="deleteRecord('fuel', ${item.id})">Delete</button>
-        </div>
-      `).join('');
+      const headers = [
+        "ID",
+        "Type",
+        "Date",
+        "Odometer_km",
+        "Fuel_Litres",
+        "Fuel_Rate_Per_Litre",
+        "Full_Tank",
+        "Category",
+        "Total_Cost_INR",
+        "Notes"
+      ];
+
+      const csvRows = [headers.join(",")];
+
+      logs.forEach(l => {
+        const cleanNotes = (l.notes || "").replace(/"/g, '""');
+        const row = [
+          `"${l.id}"`,
+          `"${l.type || ""}"`,
+          `"${l.date || ""}"`,
+          `"${l.odometer || ""}"`,
+          `"${l.litres || ""}"`,
+          `"${l.rate || ""}"`,
+          `"${l.fullTank ? "YES" : "NO"}"`,
+          `"${l.category || ""}"`,
+          `"${l.cost || "0"}"`,
+          `"${cleanNotes}"`
+        ];
+        csvRows.push(row.join(","));
+      });
+
+      const csvBlob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(csvBlob);
+      const link = document.createElement("a");
+      const dateStr = new Date().toISOString().split("T")[0];
+      link.href = url;
+      link.download = `vehiq_unified_all_logs_${dateStr}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      showToast("Full CSV exported successfully", "ph-check-circle");
     }
 
-    // Render Service List
-    function renderServiceList() {
-      const sortType = document.getElementById('servSort').value;
-      const sorted = sortRecords(serviceData, sortType);
-      const container = document.getElementById('serviceHistoryList');
-
-      if (sorted.length === 0) {
-        container.innerHTML = `<div class="empty-state">No service entries found. Tap + to add.</div>`;
-        return;
-      }
-
-      container.innerHTML = sorted.map(item => `
-        <div class="entry-card service-entry">
-          <div class="entry-header">
-            <span class="entry-title">🛣️ ${item.odo} km</span>
-            <span class="entry-cost">₹${item.cost.toFixed(2)}</span>
-          </div>
-          <div class="entry-meta" style="margin-bottom:6px;">
-            <span>📅 ${item.date}</span>
-          </div>
-          <div style="font-size:0.85rem; color:var(--text);">${item.notes}</div>
-          <button class="btn-delete" onclick="deleteRecord('service', ${item.id})">Delete</button>
-        </div>
-      `).join('');
-    }
-
-    // Render Expense List
-    function renderExpenseList() {
-      const sortType = document.getElementById('expSort').value;
-      const sorted = sortRecords(expenseData, sortType);
-      const container = document.getElementById('expenseHistoryList');
-
-      if (sorted.length === 0) {
-        container.innerHTML = `<div class="empty-state">No expense entries found. Tap + to add.</div>`;
-        return;
-      }
-
-      container.innerHTML = sorted.map(item => `
-        <div class="entry-card expense-entry">
-          <div class="entry-header">
-            <span class="entry-title"><span class="badge badge-expense">${item.category}</span> ${item.notes || ''}</span>
-            <span class="entry-cost">₹${item.cost.toFixed(2)}</span>
-          </div>
-          <div class="entry-meta">
-            <span>📅 ${item.date}</span>
-          </div>
-          <button class="btn-delete" onclick="deleteRecord('expense', ${item.id})">Delete</button>
-        </div>
-      `).join('');
-    }
-
-    // Full VehIQ CSV Parser
-    function handleCSVImport(e) {
-      const file = e.target.files[0];
+    function importAllDataCSV(event) {
+      const file = event.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
-      reader.onload = function(evt) {
-        const lines = evt.target.result.split(/\r?\n/);
-        let section = '';
-        let fuelCount = 0;
-        let servCount = 0;
+      reader.onload = function(e) {
+        try {
+          const text = e.target.result;
+          const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+          if (lines.length <= 1) {
+            showToast("CSV file is empty", "ph-warning");
+            return;
+          }
 
-        lines.forEach((line, index) => {
-          const trimmed = line.trim();
-          if (!trimmed) return;
+          let importedCount = 0;
 
-          if (trimmed.startsWith('FUEL ENTRIES')) { section = 'fuel'; return; }
-          if (trimmed.startsWith('SERVICE RECORDS')) { section = 'service'; return; }
-          if (trimmed.startsWith('Total')) return;
+          // Parse rows
+          for (let i = 1; i < lines.length; i++) {
+            // Regex to handle quoted CSV items
+            const rowValues = lines[i].match(/(?:^|,)("(?:[^"]|"")*"|[^,]*)/g)
+              .map(val => val.replace(/^,/, '').replace(/^"|"$/g, '').replace(/""/g, '"').trim());
 
-          const cols = trimmed.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
-
-          if (section === 'fuel' && cols[0] !== 'Date') {
-            const date = cols[0];
-            const odo = parseFloat(cols[1]);
-            const qty = parseFloat(cols[2]);
-            const unit = parseFloat(cols[3]) || 0;
-            const cost = parseFloat(cols[4]);
-            const fullTank = (cols[6] && cols[6].toLowerCase() === 'yes');
-
-            if (!isNaN(odo) && !isNaN(qty) && !isNaN(cost)) {
-              fuelData.push({
-                id: Date.now() + Math.random(),
-                type: 'fuel',
-                date,
-                odo,
-                qty,
-                unit: unit || (cost / qty),
-                cost,
-                fullTank,
-                createdTime: Date.now() + index
-              });
-              fuelCount++;
-            }
-          } else if (section === 'service' && cols[0] !== 'Date') {
-            const date = cols[0];
-            const title = cols[2] || cols[1] || 'Maintenance';
-            const odo = parseFloat(cols[4]);
-            const cost = parseFloat(cols[5]);
-            const notes = cols[6] ? `${title} (${cols[6]})` : title;
-
-            if (!isNaN(odo)) {
-              serviceData.push({
-                id: Date.now() + Math.random(),
-                type: 'service',
-                date,
-                odo,
-                cost: isNaN(cost) ? 0 : cost,
-                notes,
-                createdTime: Date.now() + index
-              });
-              servCount++;
+            if (rowValues.length >= 8) {
+              const [id, type, date, odo, litres, rate, fullTank, category, cost, notes] = rowValues;
+              
+              if (type && date) {
+                logs.push({
+                  id: id && id.length > 5 ? id : 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                  type: type.toLowerCase(),
+                  date: date,
+                  odometer: odo ? Number(odo) : '',
+                  litres: litres ? Number(litres) : '',
+                  rate: rate ? Number(rate) : '',
+                  fullTank: fullTank.toUpperCase() === 'YES',
+                  category: category || '',
+                  cost: Number(cost || 0),
+                  notes: notes || ''
+                });
+                importedCount++;
+              }
             }
           }
-        });
 
-        localStorage.setItem('fuelData', JSON.stringify(fuelData));
-        localStorage.setItem('serviceData', JSON.stringify(serviceData));
-        refreshAll();
-        alert(`CSV Import Completed: Added ${fuelCount} Fuel records and ${servCount} Service records.`);
+          saveLogs();
+          showToast(`Imported ${importedCount} logs successfully`, "ph-check-circle");
+          event.target.value = '';
+        } catch (err) {
+          console.error("CSV import error:", err);
+          showToast("Failed to parse CSV file", "ph-x-circle");
+        }
       };
       reader.readAsText(file);
     }
 
-    // Comprehensive Export Function
-    function exportDataToCSV() {
-      let csv = 'FUEL ENTRIES\nDate,Odometer (km),Quantity (L),Price/Unit (₹),Total Cost (₹),Full Tank\n';
-      fuelData.forEach(f => {
-        csv += `${f.date},${f.odo},${f.qty},${f.unit ? f.unit.toFixed(2) : (f.cost/f.qty).toFixed(2)},${f.cost},${f.fullTank ? 'Yes' : 'No'}\n`;
+    function openDetailsModal(id) {
+      const log = logs.find(l => l.id === id);
+      if (!log) return;
+
+      activeLogId = id;
+
+      const modal = document.getElementById('detailsModal');
+      const badge = document.getElementById('detailTypeBadge');
+      const tag = document.getElementById('detailTag');
+      
+      document.getElementById('detailTitle').textContent = `${log.type.toUpperCase()} ENTRY`;
+      document.getElementById('detailCost').textContent = Number(log.cost || 0).toLocaleString('en-IN');
+      document.getElementById('detailDate').textContent = new Date(log.date).toLocaleDateString('en-IN', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
       });
 
-      csv += '\nSERVICE RECORDS\nDate,Odometer (km),Cost (₹),Notes\n';
-      serviceData.forEach(s => {
-        csv += `${s.date},${s.odo},${s.cost},"${(s.notes || '').replace(/"/g, '""')}"\n`;
-      });
+      // Odometer
+      const rowOdo = document.getElementById('rowOdo');
+      if (log.odometer) {
+        rowOdo.classList.remove('hidden');
+        document.getElementById('detailOdo').textContent = `${Number(log.odometer).toLocaleString('en-IN')} km`;
+      } else {
+        rowOdo.classList.add('hidden');
+      }
 
-      csv += '\nGENERAL EXPENSES\nDate,Category,Cost (₹),Notes\n';
-      expenseData.forEach(x => {
-        csv += `${x.date},${x.category},${x.cost},"${(x.notes || '').replace(/"/g, '""')}"\n`;
-      });
+      // Fuel specific
+      const rowQty = document.getElementById('rowFuelQty');
+      const rowRate = document.getElementById('rowFuelRate');
+      const rowMileage = document.getElementById('rowCalculatedMileage');
+      const rowCat = document.getElementById('rowCategory');
 
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.setAttribute('href', url);
-      a.setAttribute('download', `vehicle_logs_backup_${new Date().toISOString().slice(0,10)}.csv`);
-      a.click();
+      if (log.type === 'fuel') {
+        badge.className = 'w-9 h-9 rounded-xl flex items-center justify-center text-lg bg-amber-500/20 text-amber-500';
+        badge.innerHTML = '<i class="ph-fill ph-drop"></i>';
+        tag.className = 'px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-500';
+        tag.textContent = log.fullTank ? 'Full Tank Fill' : 'Partial Fill';
+
+        rowQty.classList.remove('hidden');
+        document.getElementById('detailFuelQty').textContent = `${log.litres || 0} Litres`;
+
+        rowRate.classList.remove('hidden');
+        document.getElementById('detailFuelRate').textContent = `₹${log.rate || 0} / L`;
+
+        if (log._calculatedMileage) {
+          rowMileage.classList.remove('hidden');
+          document.getElementById('detailMileage').textContent = `${log._calculatedMileage} km/L`;
+        } else {
+          rowMileage.classList.add('hidden');
+        }
+
+        rowCat.classList.add('hidden');
+      } else if (log.type === 'service') {
+        badge.className = 'w-9 h-9 rounded-xl flex items-center justify-center text-lg bg-blue-500/20 text-blue-500';
+        badge.innerHTML = '<i class="ph-fill ph-wrench"></i>';
+        tag.className = 'px-3 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-500';
+        tag.textContent = 'Service';
+
+        rowQty.classList.add('hidden');
+        rowRate.classList.add('hidden');
+        rowMileage.classList.add('hidden');
+
+        rowCat.classList.remove('hidden');
+        document.getElementById('detailCategory').textContent = log.category || 'Periodic Service';
+      } else {
+        badge.className = 'w-9 h-9 rounded-xl flex items-center justify-center text-lg bg-emerald-500/20 text-emerald-500';
+        badge.innerHTML = '<i class="ph-fill ph-receipt"></i>';
+        tag.className = 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-500';
+        tag.textContent = 'General Expense';
+
+        rowQty.classList.add('hidden');
+        rowRate.classList.add('hidden');
+        rowMileage.classList.add('hidden');
+
+        rowCat.classList.remove('hidden');
+        document.getElementById('detailCategory').textContent = log.category || 'Expense';
+      }
+
+      // Notes (Formatted wrap)
+      const notesEl = document.getElementById('detailNotes');
+      if (log.notes && log.notes.trim().length > 0) {
+        notesEl.textContent = log.notes;
+        notesEl.className = 'p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-darkborder text-xs leading-relaxed text-slate-800 dark:text-slate-200 wrap-note';
+      } else {
+        notesEl.textContent = 'No additional remarks.';
+        notesEl.className = 'p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-darkborder text-xs italic text-slate-400 wrap-note';
+      }
+
+      modal.classList.remove('hidden');
     }
 
-    // Initial Load
-    refreshAll();
+    function closeDetailsModal() {
+      document.getElementById('detailsModal').classList.add('hidden');
+      activeLogId = null;
+    }
+
+    function deleteCurrentLog() {
+      if (!activeLogId) return;
+      logs = logs.filter(l => l.id !== activeLogId);
+      saveLogs();
+      closeDetailsModal();
+      showToast('Log entry removed', 'ph-trash');
+    }
+
+    function copyCurrentLogDetails() {
+      const log = logs.find(l => l.id === activeLogId);
+      if (!log) return;
+
+      const summary = `VehIQ ${log.type.toUpperCase()} Log\nDate: ${log.date}\nAmount: ₹${log.cost}\nOdometer: ${log.odometer || 'N/A'} km\nDetails: ${log.category || log.litres + 'L'}\nNotes: ${log.notes || 'None'}`;
+      
+      const textArea = document.createElement("textarea");
+      textArea.value = summary;
+      textArea.style.position = "fixed";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      try {
+        document.execCommand('copy');
+        showToast('Details copied to clipboard', 'ph-copy');
+      } catch (err) {
+        showToast('Failed to copy', 'ph-x');
+      }
+      document.body.removeChild(textArea);
+    }
+
+    function openAddModal() {
+      document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
+      setAddType('fuel');
+      document.getElementById('addModal').classList.remove('hidden');
+    }
+
+    function closeAddModal() {
+      document.getElementById('addModal').classList.add('hidden');
+      document.getElementById('addEntryForm').reset();
+    }
+
+    function setAddType(type) {
+      document.getElementById('entryType').value = type;
+      
+      const tabs = ['fuel', 'service', 'expense'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        if (t === type) {
+          btn.className = 'py-2 rounded-xl text-xs font-bold transition-all bg-white dark:bg-darkcard text-brand-600 dark:text-white shadow-sm flex items-center justify-center gap-1.5';
+        } else {
+          btn.className = 'py-2 rounded-xl text-xs font-bold transition-all text-slate-600 dark:text-slate-400 flex items-center justify-center gap-1.5';
+        }
+      });
+
+      document.getElementById('fieldsFuel').classList.toggle('hidden', type !== 'fuel');
+      document.getElementById('fieldsService').classList.toggle('hidden', type !== 'service');
+      document.getElementById('fieldsExpense').classList.toggle('hidden', type !== 'expense');
+    }
+
+    function calculateFuelCost() {
+      const litres = parseFloat(document.getElementById('fuelLitres').value) || 0;
+      const rate = parseFloat(document.getElementById('fuelRate').value) || 0;
+      if (litres > 0 && rate > 0) {
+        document.getElementById('entryCost').value = (litres * rate).toFixed(2);
+      }
+    }
+
+    function handleSaveEntry(e) {
+      e.preventDefault();
+      const type = document.getElementById('entryType').value;
+      const date = document.getElementById('entryDate').value;
+      const odo = document.getElementById('entryOdo').value;
+      const cost = parseFloat(document.getElementById('entryCost').value) || 0;
+      const notes = document.getElementById('entryNotes').value;
+
+      const newLog = {
+        id: 'log_' + Date.now(),
+        type,
+        date,
+        odometer: odo ? Number(odo) : '',
+        cost,
+        notes
+      };
+
+      if (type === 'fuel') {
+        newLog.litres = parseFloat(document.getElementById('fuelLitres').value) || '';
+        newLog.rate = parseFloat(document.getElementById('fuelRate').value) || '';
+        newLog.fullTank = document.getElementById('fuelFullTank').checked;
+      } else if (type === 'service') {
+        newLog.category = document.getElementById('serviceCategory').value;
+      } else if (type === 'expense') {
+        newLog.category = document.getElementById('expenseCategory').value;
+      }
+
+      logs.push(newLog);
+      saveLogs();
+      closeAddModal();
+      showToast('Entry recorded successfully', 'ph-check-circle');
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      const filters = ['all', 'fuel', 'service', 'expense'];
+      filters.forEach(f => {
+        const btn = document.getElementById(`filterBtn-${f}`);
+        if (f === filter) {
+          btn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-brand-600 text-white transition-colors';
+        } else {
+          btn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors';
+        }
+      });
+      renderLogsList();
+    }
+
+    function openSettingsModal() {
+      updateBackupUI();
+      document.getElementById('settingsModal').classList.remove('hidden');
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settingsModal').classList.add('hidden');
+    }
+
+    function clearAllDataWithConfirmation() {
+      if (confirm('Are you sure you want to clear all logs? Make sure you have exported a CSV or backup first.')) {
+        logs = [];
+        saveLogs();
+        closeSettingsModal();
+        showToast('All logs reset', 'ph-trash');
+      }
+    }
+
+    function showToast(msg, iconClass = 'ph-check-circle') {
+      const toast = document.getElementById('toastNotification');
+      document.getElementById('toastMsg').textContent = msg;
+      document.getElementById('toastIcon').className = `ph-bold ${iconClass} text-base`;
+      
+      toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-3');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-3');
+        toast.classList.remove('opacity-100', 'translate-y-0');
+      }, 2600);
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // App Initialization
+    window.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      loadLogs();
+      renderDashboard();
+    });
   </script>
 </body>
 </html>

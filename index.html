@@ -975,33 +975,60 @@
       localStorage.setItem('vehIQ_logs', JSON.stringify(logs));
     }
 
-    // Metrics Calculation
+// Sahi aur Solid Calculation Engine
     function calculateMetrics() {
-      const totalSpend = logs.reduce((acc, l) => acc + (l.cost || 0), 0);
-      document.getElementById('statTotalSpend').textContent = '₹' + totalSpend.toLocaleString('en-IN');
+      // 1. Total Spend (Fuel + Service + Expense)
+      const totalSpend = logs.reduce((acc, l) => acc + (parseFloat(l.cost) || 0), 0);
+      document.getElementById('statTotalSpend').textContent = '₹' + Math.round(totalSpend).toLocaleString('en-IN');
       document.getElementById('statTotalLogs').textContent = logs.length + ' entries logged';
 
+      // 2. Last 30 Days Spend
       const now = new Date();
       const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
       const recentLogs = logs.filter(l => new Date(l.date) >= thirtyDaysAgo);
-      const recentSpend = recentLogs.reduce((acc, l) => acc + (l.cost || 0), 0);
-      document.getElementById('statMonthSpend').textContent = '₹' + recentSpend.toLocaleString('en-IN');
+      const recentSpend = recentLogs.reduce((acc, l) => acc + (parseFloat(l.cost) || 0), 0);
+      document.getElementById('statMonthSpend').textContent = '₹' + Math.round(recentSpend).toLocaleString('en-IN');
       document.getElementById('statMonthLogs').textContent = recentLogs.length + ' entries in 30 days';
 
+      // 3. Mileage & Running Cost (Fuel Entries Sorted by Odometer)
       const fuelLogs = logs
-        .filter(l => l.type === 'Fuel' && l.quantity > 0 && l.odometer > 0)
-        .sort((a, b) => a.odometer - b.odometer);
+        .filter(l => l.type === 'Fuel' && (parseFloat(l.odometer) || 0) > 0)
+        .sort((a, b) => (parseFloat(a.odometer) || 0) - (parseFloat(b.odometer) || 0));
 
-      let totalKm = 0;
-      let totalLiters = 0;
+      if (fuelLogs.length >= 2) {
+        const firstOdo = parseFloat(fuelLogs[0].odometer);
+        const lastOdo = parseFloat(fuelLogs[fuelLogs.length - 1].odometer);
+        const totalDistance = lastOdo - firstOdo;
 
-      for (let i = 1; i < fuelLogs.length; i++) {
-        const prev = fuelLogs[i - 1];
-        const curr = fuelLogs[i];
-        if (curr.fullTank && curr.odometer > prev.odometer) {
-          totalKm += (curr.odometer - prev.odometer);
-          totalLiters += curr.quantity;
+        // Total fuel consumed between first and last odometer
+        const totalFuelQty = fuelLogs.slice(1).reduce((acc, l) => acc + (parseFloat(l.quantity) || 0), 0) 
+                             || fuelLogs.reduce((acc, l) => acc + (parseFloat(l.quantity) || 0), 0);
+
+        const totalFuelCost = fuelLogs.slice(1).reduce((acc, l) => acc + (parseFloat(l.cost) || 0), 0)
+                              || fuelLogs.reduce((acc, l) => acc + (parseFloat(l.cost) || 0), 0);
+
+        if (totalDistance > 0 && totalFuelQty > 0) {
+          // Real Mileage: Km / Litre
+          const avgMileage = (totalDistance / totalFuelQty).toFixed(2);
+          document.getElementById('statMileage').innerHTML = `${avgMileage} <span style="font-size:0.8rem">km/L</span>`;
+
+          // Real Running Cost: Total Fuel Rupees / Total Km
+          const costPerKm = (totalFuelCost / totalDistance).toFixed(2);
+          document.getElementById('statRunningCost').innerHTML = `₹${costPerKm} <span style="font-size:0.8rem">/km</span>`;
+          document.getElementById('statMileageRange').textContent = `${totalDistance.toLocaleString('en-IN')} km tracked`;
+        } else {
+          resetFuelStats();
         }
+      } else {
+        resetFuelStats();
+      }
+    }
+
+    function resetFuelStats() {
+      document.getElementById('statMileage').innerHTML = `-- <span style="font-size:0.8rem">km/L</span>`;
+      document.getElementById('statRunningCost').innerHTML = `-- <span style="font-size:0.8rem">₹/km</span>`;
+      document.getElementById('statMileageRange').textContent = 'Add 2+ fuel logs';
+    }
       }
 
       if (totalLiters > 0 && totalKm > 0) {

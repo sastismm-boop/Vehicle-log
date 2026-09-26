@@ -186,7 +186,7 @@
       border-color: var(--accent);
     }
 
-    /* Fixed Custom Dropdown (Never cuts into side/left screen) */
+    /* Dropdown */
     .custom-select-wrapper {
       position: relative;
       user-select: none;
@@ -249,7 +249,6 @@
       font-weight: 600;
     }
 
-    /* In-Category Quick Add Bar */
     .category-quick-bar {
       margin-bottom: 14px;
     }
@@ -345,7 +344,6 @@
       margin-bottom: 6px;
     }
 
-    /* Word wrapping fix for notes */
     .log-note {
       font-size: 0.8rem;
       color: var(--text-sub);
@@ -463,7 +461,6 @@
       min-height: 60px;
     }
 
-    /* Type Picker Segmented Cards */
     .segmented-group {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -489,7 +486,6 @@
       border-color: var(--accent);
     }
 
-    /* Expense Category Chips */
     .chips-grid {
       display: flex;
       flex-wrap: wrap;
@@ -553,7 +549,6 @@
       margin-top: 10px;
     }
 
-    /* Detail View Styling */
     .detail-row {
       display: flex;
       justify-content: space-between;
@@ -700,7 +695,6 @@
       </div>
       <form id="logForm">
         
-        <!-- Segmented Type Selector -->
         <label style="font-size:0.8rem; color:var(--text-sub); font-weight:600; margin-bottom:6px; display:block;">Select Category</label>
         <div class="segmented-group">
           <div class="segmented-btn selected" data-type="Fuel">⛽ Fuel</div>
@@ -745,6 +739,7 @@
             <div class="chip-item" data-cat="Parking">Parking</div>
             <div class="chip-item" data-cat="Challan">Challan</div>
             <div class="chip-item" data-cat="Washing">Washing</div>
+            <div class="chip-item" data-cat="Accessories">Accessories</div>
             <div class="chip-item" data-cat="Parts">Spares / Parts</div>
             <div class="chip-item" data-cat="Misc">Miscellaneous</div>
           </div>
@@ -1157,9 +1152,9 @@
       }
     });
 
-    // ==========================================
-    // BULLETPROOF UNIVERSAL CSV IMPORT & EXPORT
-    // ==========================================
+    // ========================================================
+    // MULTI-SECTION ROBUST CSV EXPORT & SMART UNIVERSAL IMPORT
+    // ========================================================
 
     document.getElementById('exportBtn').addEventListener('click', () => {
       if (logs.length === 0) {
@@ -1170,24 +1165,32 @@
     });
 
     function exportUnifiedCSV() {
-      const headers = ['Type', 'Date', 'Odometer', 'Total Cost', 'Quantity', 'Rate', 'Category', 'Full Tank', 'Notes'];
-      const rows = logs.map(l => [
-        `"${l.type || 'Fuel'}"`,
-        `"${l.date || ''}"`,
-        l.odometer || 0,
-        l.cost || 0,
-        l.quantity || 0,
-        l.rate || 0,
-        `"${l.category || ''}"`,
-        l.fullTank ? 'TRUE' : 'FALSE',
-        `"${(l.notes || '').replace(/"/g, '""')}"`
-      ]);
+      // 1. Separate sections
+      const fuels = logs.filter(l => l.type === 'Fuel');
+      const services = logs.filter(l => l.type === 'Service');
+      const expenses = logs.filter(l => l.type === 'Expense');
 
-      const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      let csvContent = "data:text/csv;charset=utf-8,";
+      
+      csvContent += "FUEL ENTRIES\nDate,Odometer (km),Quantity (L),Price/Unit (₹),Total Cost (₹),Full Tank\n";
+      fuels.forEach(l => {
+        csvContent += `${l.date || ''},${l.odometer || 0},${l.quantity || 0},${l.rate || 0},${l.cost || 0},${l.fullTank ? 'Yes' : 'No'}\n`;
+      });
+
+      csvContent += "\nSERVICE RECORDS\nDate,Odometer (km),Cost (₹),Notes\n";
+      services.forEach(l => {
+        csvContent += `${l.date || ''},${l.odometer || 0},${l.cost || 0},"${(l.notes || '').replace(/"/g, '""')}"\n`;
+      });
+
+      csvContent += "\nGENERAL EXPENSES\nDate,Category,Cost (₹),Notes\n";
+      expenses.forEach(l => {
+        csvContent += `${l.date || ''},"${(l.category || 'Misc').replace(/"/g, '""')}",${l.cost || 0},"${(l.notes || '').replace(/"/g, '""')}"\n`;
+      });
+
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement('a');
       link.setAttribute('href', encodedUri);
-      link.setAttribute('download', `Vehicle_Logs_Backup_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute('download', `vehicle_logs_backup_${new Date().toISOString().split('T')[0]}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -1195,7 +1198,7 @@
       localStorage.setItem('vehIQ_last_backup', new Date().toISOString());
     }
 
-    // Trigger Android Native File Dialog
+    // Android Native File Picker Handler
     document.getElementById('importBtn').addEventListener('click', () => {
       fileInput.value = '';
       fileInput.click();
@@ -1208,8 +1211,7 @@
       const reader = new FileReader();
       reader.onload = (event) => {
         try {
-          const text = event.target.result;
-          parseUniversalCSV(text);
+          parseSmartMultiSectionCSV(event.target.result);
         } catch (err) {
           alert('Error reading CSV: ' + err.message);
         }
@@ -1217,144 +1219,148 @@
       reader.readAsText(file);
     });
 
-    function parseUniversalCSV(text) {
+    // Multi-Section Parser (Handles Fuel Entries, Service Records & General Expenses)
+    function parseSmartMultiSectionCSV(text) {
       if (!text || !text.trim()) {
-        alert('Selected file is empty.');
+        alert('File is empty.');
         return;
       }
 
-      const rawLines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
-      if (rawLines.length < 2) {
-        alert('File does not have enough rows or header information.');
-        return;
+      function cleanNum(val) {
+        if (!val) return 0;
+        let c = val.toString().replace(/[₹$€,\s]/g, '').trim();
+        return parseFloat(c) || 0;
       }
 
-      const firstLine = rawLines[0];
-      let delimiter = ',';
-      const commaCount = (firstLine.match(/,/g) || []).length;
-      const semiCount = (firstLine.match(/;/g) || []).length;
-      const tabCount = (firstLine.match(/\t/g) || []).length;
+      function parseLine(line) {
+        const pattern = /(?:,|\n|^)("(?:(?:"")*[^"]*)*"|[^",\n]*|(?:\n|$))/g;
+        const matches = [];
+        let match;
+        while ((match = pattern.exec(line)) !== null && match.index < line.length) {
+          let val = match[1] || '';
+          if (val.startsWith('"') && val.endsWith('"')) {
+            val = val.slice(1, -1).replace(/""/g, '"');
+          }
+          matches.push(val.trim());
+          if (pattern.lastIndex === match.index) break;
+        }
+        return matches;
+      }
 
-      if (semiCount > commaCount && semiCount > tabCount) delimiter = ';';
-      else if (tabCount > commaCount && tabCount > semiCount) delimiter = '\t';
+      const rawLines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+      let currentSection = 'UNKNOWN';
+      let sectionHeaders = [];
+      let importedCount = 0;
 
-      function splitLine(line, delim) {
-        const result = [];
-        let cur = '';
-        let inQuotes = false;
-        for (let i = 0; i < line.length; i++) {
-          const ch = line[i];
-          if (ch === '"') {
-            if (inQuotes && line[i + 1] === '"') {
-              cur += '"';
-              i++;
-            } else {
-              inQuotes = !inQuotes;
-            }
-          } else if (ch === delim && !inQuotes) {
-            result.push(cur.trim());
-            cur = '';
-          } else {
-            cur += ch;
+      for (let i = 0; i < rawLines.length; i++) {
+        const line = rawLines[i];
+        const upper = line.toUpperCase();
+
+        // 1. Detect Section Headers
+        if (upper.includes('FUEL ENTRIES') || upper.includes('FUEL LOGS')) {
+          currentSection = 'FUEL';
+          sectionHeaders = [];
+          continue;
+        } else if (upper.includes('SERVICE RECORDS') || upper.includes('MAINTENANCE')) {
+          currentSection = 'SERVICE';
+          sectionHeaders = [];
+          continue;
+        } else if (upper.includes('GENERAL EXPENSES') || upper.includes('EXPENSES') || upper.includes('EXPENSE LOGS')) {
+          currentSection = 'EXPENSE';
+          sectionHeaders = [];
+          continue;
+        }
+
+        // 2. Read column header row for current section
+        if (sectionHeaders.length === 0) {
+          const cols = parseLine(line).map(c => c.toLowerCase().replace(/[^a-z0-9]/g, ''));
+          if (cols.some(c => c.includes('date') || c.includes('odo') || c.includes('cost') || c.includes('price'))) {
+            sectionHeaders = cols;
+            continue;
           }
         }
-        result.push(cur.trim());
-        return result;
-      }
 
-      const headers = splitLine(rawLines[0], delimiter).map(h => 
-        h.toLowerCase().replace(/[^a-z0-9]/g, '')
-      );
-
-      const colMap = {
-        date: headers.findIndex(h => h.includes('date') || h.includes('time')),
-        odometer: headers.findIndex(h => h.includes('odo') || h.includes('reading') || h.includes('km') || h.includes('mileage')),
-        cost: headers.findIndex(h => h.includes('cost') || h.includes('price') || h.includes('amount') || h.includes('total') || h.includes('spend')),
-        quantity: headers.findIndex(h => h.includes('qty') || h.includes('quantity') || h.includes('litre') || h.includes('liter') || h.includes('volume') || h.includes('gallons')),
-        rate: headers.findIndex(h => h.includes('rate') || h.includes('unitprice') || h.includes('priceper')),
-        notes: headers.findIndex(h => h.includes('note') || h.includes('remark') || h.includes('comment') || h.includes('desc')),
-        type: headers.findIndex(h => h.includes('type') || h.includes('logtype')),
-        category: headers.findIndex(h => h.includes('category') || h.includes('expense')),
-        fullTank: headers.findIndex(h => h.includes('full'))
-      };
-
-      function cleanNumber(str) {
-        if (!str) return 0;
-        let clean = str.replace(/[₹$€,\s]/g, '').trim();
-        return parseFloat(clean) || 0;
-      }
-
-      let importedCount = 0;
-      for (let i = 1; i < rawLines.length; i++) {
-        const row = splitLine(rawLines[i], delimiter);
+        // 3. Process row values
+        const row = parseLine(line);
         if (row.length < 2) continue;
 
-        let rawDate = colMap.date !== -1 ? row[colMap.date] : '';
-        let formattedDate = parseFlexibleDate(rawDate);
+        // Auto determine column positions
+        const dateIdx = sectionHeaders.findIndex(h => h.includes('date') || h.includes('time'));
+        const odoIdx = sectionHeaders.findIndex(h => h.includes('odo') || h.includes('km') || h.includes('reading'));
+        const qtyIdx = sectionHeaders.findIndex(h => h.includes('qty') || h.includes('quantity') || h.includes('litre') || h.includes('liter'));
+        const rateIdx = sectionHeaders.findIndex(h => h.includes('priceunit') || h.includes('rate') || h.includes('unitprice'));
+        const costIdx = sectionHeaders.findIndex(h => h.includes('totalcost') || h.includes('cost') || h.includes('amount') || h.includes('price'));
+        const ftIdx = sectionHeaders.findIndex(h => h.includes('full') || h.includes('fulltank'));
+        const catIdx = sectionHeaders.findIndex(h => h.includes('cat') || h.includes('category') || h.includes('type'));
+        const noteIdx = sectionHeaders.findIndex(h => h.includes('note') || h.includes('remark') || h.includes('comment') || h.includes('desc'));
 
-        let odoVal = colMap.odometer !== -1 ? cleanNumber(row[colMap.odometer]) : 0;
-        let costVal = colMap.cost !== -1 ? cleanNumber(row[colMap.cost]) : 0;
-        let qtyVal = colMap.quantity !== -1 ? cleanNumber(row[colMap.quantity]) : 0;
-        let rateVal = colMap.rate !== -1 ? cleanNumber(row[colMap.rate]) : 0;
-        let notesVal = colMap.notes !== -1 ? (row[colMap.notes] || '') : '';
-        let typeVal = colMap.type !== -1 ? (row[colMap.type] || '') : '';
-        let catVal = colMap.category !== -1 ? (row[colMap.category] || '') : '';
+        let rowDate = parseFlexibleDate(dateIdx !== -1 ? row[dateIdx] : '');
+        let rowCost = costIdx !== -1 ? cleanNum(row[costIdx]) : 0;
+        let rowOdo = odoIdx !== -1 ? cleanNum(row[odoIdx]) : 0;
+        let rowQty = qtyIdx !== -1 ? cleanNum(row[qtyIdx]) : 0;
+        let rowRate = rateIdx !== -1 ? cleanNum(row[rateIdx]) : 0;
+        let rowNotes = noteIdx !== -1 ? (row[noteIdx] || '') : '';
+        let rowCat = catIdx !== -1 ? (row[catIdx] || '') : '';
         
-        let fullTankVal = true;
-        if (colMap.fullTank !== -1) {
-          const rawFt = (row[colMap.fullTank] || '').toLowerCase();
-          fullTankVal = ['1', 'true', 'yes', 'y'].includes(rawFt);
+        let rowFullTank = true;
+        if (ftIdx !== -1) {
+          const ftVal = (row[ftIdx] || '').toLowerCase();
+          rowFullTank = ['yes', 'true', '1', 'y'].includes(ftVal);
         }
 
-        if (!['Fuel', 'Service', 'Expense'].includes(typeVal)) {
-          if (qtyVal > 0 || (costVal > 0 && odoVal > 0 && !catVal)) {
-            typeVal = 'Fuel';
-          } else {
-            typeVal = 'Expense';
-          }
+        // Infer Type
+        let rowType = 'Fuel';
+        if (currentSection === 'SERVICE') {
+          rowType = 'Service';
+        } else if (currentSection === 'EXPENSE') {
+          rowType = 'Expense';
+        } else if (currentSection === 'FUEL') {
+          rowType = 'Fuel';
+        } else {
+          // If no section header was found (single table format)
+          if (rowQty > 0) rowType = 'Fuel';
+          else if (rowCat) rowType = 'Expense';
+          else rowType = 'Fuel';
         }
 
-        if (costVal > 0 && qtyVal > 0 && rateVal === 0) {
-          rateVal = parseFloat((costVal / qtyVal).toFixed(2));
-        }
-
-        if (costVal > 0 || odoVal > 0 || qtyVal > 0) {
+        if (rowCost > 0 || rowOdo > 0 || rowQty > 0) {
           logs.push({
             id: 'log_' + Date.now() + '_' + i,
-            type: typeVal,
-            date: formattedDate,
-            odometer: odoVal,
-            cost: costVal,
-            quantity: qtyVal,
-            rate: rateVal,
-            category: catVal,
-            fullTank: fullTankVal,
-            notes: notesVal
+            type: rowType,
+            date: rowDate,
+            odometer: rowOdo,
+            cost: rowCost,
+            quantity: rowQty,
+            rate: rowRate,
+            category: rowCat,
+            fullTank: rowFullTank,
+            notes: rowNotes
           });
           importedCount++;
         }
       }
 
-      saveData();
-      renderLogs();
-      calculateMetrics();
-      alert(`Success! Successfully imported ${importedCount} entries.`);
+      if (importedCount > 0) {
+        saveData();
+        renderLogs();
+        calculateMetrics();
+        alert(`Success! Successfully imported ${importedCount} records (Fuel + Services + Expenses).`);
+      } else {
+        alert('Could not find any valid records in this file.');
+      }
     }
 
     function parseFlexibleDate(d) {
       if (!d) return new Date().toISOString().split('T')[0];
       d = d.trim().split(' ')[0];
-      
       if (/^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}/.test(d)) {
         const pts = d.split(/[-/.]/);
         return `${pts[0]}-${pts[1].padStart(2, '0')}-${pts[2].padStart(2, '0')}`;
       }
-      
       if (/^\d{1,2}[-/.]\d{1,2}[-/.]\d{4}/.test(d)) {
         const pts = d.split(/[-/.]/);
         return `${pts[2]}-${pts[1].padStart(2, '0')}-${pts[0].padStart(2, '0')}`;
       }
-
       return new Date().toISOString().split('T')[0];
     }
 

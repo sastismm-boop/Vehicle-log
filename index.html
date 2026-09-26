@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Vehicle Log Manager</title>
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#1e293b">
+  <meta name="theme-color" content="#0f172a">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -22,8 +22,9 @@
       --warning: #f59e0b;
       --danger: #ef4444;
       --purple: #8b5cf6;
-      --input-bg: #0f172a;
-      --modal-overlay: rgba(0, 0, 0, 0.75);
+      --input-bg: #0b1120;
+      --modal-overlay: rgba(0, 0, 0, 0.8);
+      --dropdown-hover: #2d3d54;
     }
 
     [data-theme="light"] {
@@ -39,7 +40,8 @@
       --danger: #dc2626;
       --purple: #7c3aed;
       --input-bg: #f1f5f9;
-      --modal-overlay: rgba(15, 23, 42, 0.6);
+      --modal-overlay: rgba(15, 23, 42, 0.65);
+      --dropdown-hover: #e2e8f0;
     }
 
     * {
@@ -53,11 +55,10 @@
     body {
       background-color: var(--bg);
       color: var(--text-main);
-      /* Fix for camera notch / status bar overlap on Android */
-      padding-top: max(24px, env(safe-area-inset-top, 24px));
+      padding-top: max(26px, env(safe-area-inset-top, 26px));
       padding-left: max(16px, env(safe-area-inset-left, 16px));
       padding-right: max(16px, env(safe-area-inset-right, 16px));
-      padding-bottom: max(90px, env(safe-area-inset-bottom, 90px));
+      padding-bottom: max(96px, env(safe-area-inset-bottom, 96px));
       max-width: 600px;
       margin: 0 auto;
       min-height: 100vh;
@@ -69,8 +70,8 @@
       justify-content: space-between;
       align-items: center;
       margin-top: 10px;
-      margin-bottom: 20px;
-      padding-bottom: 8px;
+      margin-bottom: 18px;
+      padding-bottom: 12px;
       border-bottom: 1px solid var(--card-border);
     }
 
@@ -114,14 +115,14 @@
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 12px;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
 
     .stat-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 12px;
-      padding: 14px;
+      padding: 13px;
     }
 
     .stat-title {
@@ -136,7 +137,7 @@
     }
 
     .stat-val {
-      font-size: 1.3rem;
+      font-size: 1.25rem;
       font-weight: 700;
       color: var(--text-main);
     }
@@ -147,13 +148,13 @@
       margin-top: 2px;
     }
 
-    /* Sorting and Filter Controls */
+    /* Controls Panel */
     .controls-panel {
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 10px;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
       flex-wrap: wrap;
     }
 
@@ -183,14 +184,88 @@
       border-color: var(--accent);
     }
 
-    .sort-box select {
+    /* Custom Stylish Selectors (Eliminates ugly grey Android popups) */
+    .custom-select-wrapper {
+      position: relative;
+      user-select: none;
+    }
+
+    .custom-select-trigger {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       color: var(--text-main);
-      padding: 7px 10px;
+      padding: 7px 12px;
       border-radius: 8px;
       font-size: 0.8rem;
-      outline: none;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .custom-select-options {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      z-index: 50;
+      min-width: 170px;
+      display: none;
+      overflow: hidden;
+    }
+
+    .custom-select-options.open {
+      display: block;
+    }
+
+    .custom-option {
+      padding: 9px 14px;
+      font-size: 0.82rem;
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .custom-option:hover {
+      background: var(--dropdown-hover);
+    }
+
+    .custom-option.selected {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* In-Category Quick Add Bar */
+    .category-quick-bar {
+      margin-bottom: 14px;
+    }
+
+    .btn-quick-add {
+      width: 100%;
+      background: rgba(59, 130, 246, 0.12);
+      border: 1px dashed var(--accent);
+      color: var(--accent);
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+
+    .btn-quick-add:active {
+      background: rgba(59, 130, 246, 0.25);
     }
 
     /* Logs Feed */
@@ -263,7 +338,7 @@
       margin-bottom: 6px;
     }
 
-    /* Word wrapping fix for notes (Will not overflow border) */
+    /* Word wrapping fix for notes */
     .log-note {
       font-size: 0.8rem;
       color: var(--text-sub);
@@ -291,12 +366,12 @@
       justify-content: center;
       font-size: 1.8rem;
       border: none;
-      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.45);
       cursor: pointer;
       z-index: 99;
     }
 
-    /* Modal Backdrop and Content */
+    /* Modals */
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -323,7 +398,7 @@
       max-width: 600px;
       max-height: 85vh;
       overflow-y: auto;
-      padding: 20px 20px max(24px, env(safe-area-inset-bottom, 24px)) 20px;
+      padding: 20px 20px max(26px, env(safe-area-inset-bottom, 26px)) 20px;
       animation: slideUp 0.2s ease-out;
     }
 
@@ -365,10 +440,9 @@
     }
 
     .form-group input, 
-    .form-group select, 
     .form-group textarea {
       width: 100%;
-      padding: 10px 12px;
+      padding: 11px 12px;
       background: var(--input-bg);
       border: 1px solid var(--card-border);
       border-radius: 8px;
@@ -380,6 +454,58 @@
     .form-group textarea {
       resize: vertical;
       min-height: 60px;
+    }
+
+    /* Type Picker Segmented Cards */
+    .segmented-group {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .segmented-btn {
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-sub);
+      padding: 10px 6px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .segmented-btn.selected {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    /* Expense Category Chips */
+    .chips-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .chip-item {
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-sub);
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .chip-item.selected {
+      background: var(--warning);
+      color: #000000;
+      border-color: var(--warning);
+      font-weight: 600;
     }
 
     .form-row {
@@ -487,7 +613,8 @@
       <button class="btn-icon" id="backupBtn" title="Auto Backup Settings">⚙️</button>
       <button class="btn-icon" id="exportBtn" title="Export CSV">📤</button>
       <button class="btn-icon" id="importBtn" title="Import CSV">📥</button>
-      <input type="file" id="fileInput" accept=".csv">
+      <!-- Optimized MIME types for Android File Chooser support -->
+      <input type="file" id="fileInput" accept=".csv, text/csv, text/plain, application/vnd.ms-excel, text/comma-separated-values, */*">
     </div>
   </header>
 
@@ -496,7 +623,7 @@
     <div class="stat-card">
       <div class="stat-title">⛽ Avg. Mileage</div>
       <div class="stat-val" id="statMileage">-- <span style="font-size:0.8rem">km/L</span></div>
-      <div class="stat-sub" id="statMileageRange">Tank-to-tank avg</div>
+      <div class="stat-sub">Tank-to-tank avg</div>
     </div>
     <div class="stat-card">
       <div class="stat-title">📉 Running Cost</div>
@@ -515,7 +642,7 @@
     </div>
   </div>
 
-  <!-- Filters & Sorting Controls -->
+  <!-- Filters & Sorting Bar -->
   <div class="controls-panel">
     <div class="category-tabs">
       <button class="tab-btn active" data-filter="all">All</button>
@@ -524,16 +651,27 @@
       <button class="tab-btn" data-filter="Expense">🧾 Expenses</button>
     </div>
 
-    <!-- Restored Sorting Dropdown -->
-    <div class="sort-box">
-      <select id="sortOrderSelect">
-        <option value="date-desc">Newest First</option>
-        <option value="date-asc">Oldest First</option>
-        <option value="odo-desc">Odo: High to Low</option>
-        <option value="odo-asc">Odo: Low to High</option>
-        <option value="cost-desc">Cost: High to Low</option>
-      </select>
+    <!-- Custom Dropdown for Sorting (No ugly grey native popups) -->
+    <div class="custom-select-wrapper">
+      <div class="custom-select-trigger" id="sortTrigger">
+        <span id="sortLabel">Newest First</span> ▾
+      </div>
+      <div class="custom-select-options" id="sortOptions">
+        <div class="custom-option selected" data-value="date-desc">Newest First</div>
+        <div class="custom-option" data-value="date-asc">Oldest First</div>
+        <div class="custom-option" data-value="odo-desc">Odo: High to Low</div>
+        <div class="custom-option" data-value="odo-asc">Odo: Low to High</div>
+        <div class="custom-option" data-value="cost-desc">Cost: High to Low</div>
+        <div class="custom-option" data-value="cost-asc">Cost: Low to High</div>
+      </div>
     </div>
+  </div>
+
+  <!-- In-Category Direct Add Button -->
+  <div class="category-quick-bar" id="categoryQuickBar">
+    <button class="btn-quick-add" id="quickAddBtn">
+      <span>+</span> <span id="quickAddLabel">Add New Entry</span>
+    </button>
   </div>
 
   <!-- Feed Header -->
@@ -555,13 +693,13 @@
         <button class="btn-close" id="closeAddModal">&times;</button>
       </div>
       <form id="logForm">
-        <div class="form-group">
-          <label>Entry Type</label>
-          <select id="logType" required>
-            <option value="Fuel">⛽ Fuel Refill</option>
-            <option value="Service">🔧 Maintenance / Service</option>
-            <option value="Expense">🧾 General Expense (Toll/Challan/Misc)</option>
-          </select>
+        
+        <!-- Segmented Type Selector -->
+        <label style="font-size:0.8rem; color:var(--text-sub); font-weight:600; margin-bottom:6px; display:block;">Select Category</label>
+        <div class="segmented-group">
+          <div class="segmented-btn selected" data-type="Fuel">⛽ Fuel</div>
+          <div class="segmented-btn" data-type="Service">🔧 Service</div>
+          <div class="segmented-btn" data-type="Expense">🧾 Expense</div>
         </div>
 
         <div class="form-row">
@@ -575,7 +713,7 @@
           </div>
         </div>
 
-        <!-- Fuel Specific Inputs -->
+        <!-- Fuel Section -->
         <div id="fuelSection">
           <div class="form-row">
             <div class="form-group">
@@ -593,17 +731,17 @@
           </div>
         </div>
 
-        <!-- Expense Specific Inputs -->
+        <!-- Expense Section (Clean Chips, Driver/Helper removed) -->
         <div id="expenseCategoryGroup" class="form-group" style="display:none;">
-          <label>Expense Category</label>
-          <select id="expenseCategory">
-            <option value="Toll">Toll Tax</option>
-            <option value="Parking">Parking Fee</option>
-            <option value="Challan">Challan / Penalty</option>
-            <option value="Washing">Car/Bike Wash</option>
-            <option value="Driver">Driver / Helper Bata</option>
-            <option value="Other">Other Miscellaneous</option>
-          </select>
+          <label>Expense Type</label>
+          <div class="chips-grid">
+            <div class="chip-item selected" data-cat="Toll">Toll Tax</div>
+            <div class="chip-item" data-cat="Parking">Parking</div>
+            <div class="chip-item" data-cat="Challan">Challan</div>
+            <div class="chip-item" data-cat="Washing">Washing</div>
+            <div class="chip-item" data-cat="Parts">Spares / Parts</div>
+            <div class="chip-item" data-cat="Misc">Miscellaneous</div>
+          </div>
         </div>
 
         <div class="form-group">
@@ -642,15 +780,15 @@
         <h3>Backup Settings</h3>
         <button class="btn-close" id="closeBackupModal">&times;</button>
       </div>
-      <div class="form-group">
-        <label>Automatic Device Backup</label>
-        <select id="autoBackupInterval">
-          <option value="0">Off (Manual only)</option>
-          <option value="1">Every 1 Day</option>
-          <option value="7">Every 7 Days (1 Week)</option>
-          <option value="15">Every 15 Days</option>
-        </select>
+      
+      <label style="font-size:0.8rem; color:var(--text-sub); font-weight:600; margin-bottom:8px; display:block;">Auto Device Backup Interval</label>
+      <div class="segmented-group" id="backupIntervalGroup" style="grid-template-columns: repeat(2, 1fr); margin-bottom:12px;">
+        <div class="segmented-btn selected" data-val="0">Off</div>
+        <div class="segmented-btn" data-val="1">Daily</div>
+        <div class="segmented-btn" data-val="7">Weekly (7D)</div>
+        <div class="segmented-btn" data-val="15">Every 15D</div>
       </div>
+
       <p style="font-size:0.8rem; color:var(--text-sub); margin-bottom:15px;">
         Auto-triggers a complete CSV download when due on app open.
       </p>
@@ -663,13 +801,15 @@
   </div>
 
   <script>
-    // App State
+    // State
     let logs = JSON.parse(localStorage.getItem('vehIQ_logs') || '[]');
     let currentFilter = 'all';
     let currentSort = 'date-desc';
+    let currentSelectedType = 'Fuel';
+    let currentSelectedCategory = 'Toll';
     let selectedLogId = null;
 
-    // DOM Elements
+    // Elements
     const logsContainer = document.getElementById('logsContainer');
     const logCounter = document.getElementById('logCounter');
     const logForm = document.getElementById('logForm');
@@ -678,9 +818,14 @@
     const backupModal = document.getElementById('backupModal');
     const detailContent = document.getElementById('detailContent');
     const fileInput = document.getElementById('fileInput');
-    const sortOrderSelect = document.getElementById('sortOrderSelect');
 
-    // Theme Setup
+    const fuelSection = document.getElementById('fuelSection');
+    const expenseCategoryGroup = document.getElementById('expenseCategoryGroup');
+    const fuelQty = document.getElementById('fuelQty');
+    const fuelRate = document.getElementById('fuelRate');
+    const totalCost = document.getElementById('totalCost');
+
+    // Theme Management
     const themeToggle = document.getElementById('themeToggle');
     const savedTheme = localStorage.getItem('vehIQ_theme') || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
@@ -692,24 +837,61 @@
       localStorage.setItem('vehIQ_theme', next);
     });
 
-    // Form Field Reactions
-    const logType = document.getElementById('logType');
-    const fuelSection = document.getElementById('fuelSection');
-    const expenseCategoryGroup = document.getElementById('expenseCategoryGroup');
-    const fuelQty = document.getElementById('fuelQty');
-    const fuelRate = document.getElementById('fuelRate');
-    const totalCost = document.getElementById('totalCost');
+    // Custom Sort Dropdown Handler
+    const sortTrigger = document.getElementById('sortTrigger');
+    const sortOptions = document.getElementById('sortOptions');
+    const sortLabel = document.getElementById('sortLabel');
 
-    logType.addEventListener('change', (e) => {
-      const val = e.target.value;
-      fuelSection.style.display = val === 'Fuel' ? 'block' : 'none';
-      expenseCategoryGroup.style.display = val === 'Expense' ? 'block' : 'none';
-      if (val !== 'Fuel') {
+    sortTrigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      sortOptions.classList.toggle('open');
+    });
+
+    document.querySelectorAll('.custom-option').forEach(opt => {
+      opt.addEventListener('click', (e) => {
+        document.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+        currentSort = opt.getAttribute('data-value');
+        sortLabel.textContent = opt.textContent;
+        sortOptions.classList.remove('open');
+        renderLogs();
+      });
+    });
+
+    document.addEventListener('click', () => {
+      sortOptions.classList.remove('open');
+    });
+
+    // Custom Type Selector (Fuel / Service / Expense)
+    document.querySelectorAll('.segmented-btn[data-type]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        setType(btn.getAttribute('data-type'));
+      });
+    });
+
+    function setType(type) {
+      currentSelectedType = type;
+      document.querySelectorAll('.segmented-btn[data-type]').forEach(btn => {
+        btn.classList.toggle('selected', btn.getAttribute('data-type') === type);
+      });
+      fuelSection.style.display = type === 'Fuel' ? 'block' : 'none';
+      expenseCategoryGroup.style.display = type === 'Expense' ? 'block' : 'none';
+      if (type !== 'Fuel') {
         fuelQty.value = '';
         fuelRate.value = '';
       }
+    }
+
+    // Expense Chips Selection
+    document.querySelectorAll('.chip-item').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.chip-item').forEach(c => c.classList.remove('selected'));
+        chip.classList.add('selected');
+        currentSelectedCategory = chip.getAttribute('data-cat');
+      });
     });
 
+    // Calculations
     fuelQty.addEventListener('input', updateCostFromRate);
     fuelRate.addEventListener('input', updateCostFromRate);
 
@@ -721,38 +903,55 @@
       }
     }
 
-    // Modal Events
-    document.getElementById('openFormBtn').addEventListener('click', () => {
-      document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
-      addModal.classList.add('open');
-    });
+    // Category Tabs & In-Category Add Button Setup
+    const quickAddBtn = document.getElementById('quickAddBtn');
+    const quickAddLabel = document.getElementById('quickAddLabel');
 
-    document.getElementById('closeAddModal').addEventListener('click', () => addModal.classList.remove('open'));
-    document.getElementById('closeDetailModal').addEventListener('click', () => detailModal.classList.remove('open'));
-    document.getElementById('closeBackupModal').addEventListener('click', () => backupModal.classList.remove('open'));
+    function updateQuickAddUI() {
+      if (currentFilter === 'Fuel') {
+        quickAddLabel.textContent = 'Add Fuel Refill';
+      } else if (currentFilter === 'Service') {
+        quickAddLabel.textContent = 'Add Maintenance Log';
+      } else if (currentFilter === 'Expense') {
+        quickAddLabel.textContent = 'Add Expense Log';
+      } else {
+        quickAddLabel.textContent = 'Add New Entry';
+      }
+    }
 
-    // Category Filter Selection
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         e.target.classList.add('active');
         currentFilter = e.target.getAttribute('data-filter');
+        updateQuickAddUI();
         renderLogs();
       });
     });
 
-    // Sorting Order Change
-    sortOrderSelect.addEventListener('change', (e) => {
-      currentSort = e.target.value;
-      renderLogs();
-    });
+    function openModalWithContext() {
+      document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
+      if (currentFilter !== 'all') {
+        setType(currentFilter);
+      } else {
+        setType('Fuel');
+      }
+      addModal.classList.add('open');
+    }
+
+    document.getElementById('openFormBtn').addEventListener('click', openModalWithContext);
+    quickAddBtn.addEventListener('click', openModalWithContext);
+
+    document.getElementById('closeAddModal').addEventListener('click', () => addModal.classList.remove('open'));
+    document.getElementById('closeDetailModal').addEventListener('click', () => detailModal.classList.remove('open'));
+    document.getElementById('closeBackupModal').addEventListener('click', () => backupModal.classList.remove('open'));
 
     // Save Entry Handler
     logForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const newEntry = {
         id: 'log_' + Date.now(),
-        type: logType.value,
+        type: currentSelectedType,
         date: document.getElementById('logDate').value,
         odometer: parseFloat(document.getElementById('logOdo').value) || 0,
         cost: parseFloat(totalCost.value) || 0,
@@ -760,7 +959,7 @@
         quantity: parseFloat(fuelQty.value) || 0,
         rate: parseFloat(fuelRate.value) || 0,
         fullTank: document.getElementById('fullTank').checked,
-        category: document.getElementById('expenseCategory').value
+        category: currentSelectedType === 'Expense' ? currentSelectedCategory : ''
       };
 
       logs.push(newEntry);
@@ -816,12 +1015,11 @@
       }
     }
 
-    // Sort and Render List
+    // Render Logs Feed (Supports All Sortings)
     function renderLogs() {
       logsContainer.innerHTML = '';
       let filtered = logs.filter(l => currentFilter === 'all' || l.type === currentFilter);
 
-      // Apply User Selected Sorting
       filtered.sort((a, b) => {
         if (currentSort === 'date-desc') {
           return new Date(b.date) - new Date(a.date) || (b.odometer || 0) - (a.odometer || 0);
@@ -833,6 +1031,8 @@
           return (a.odometer || 0) - (b.odometer || 0);
         } else if (currentSort === 'cost-desc') {
           return (b.cost || 0) - (a.cost || 0);
+        } else if (currentSort === 'cost-asc') {
+          return (a.cost || 0) - (b.cost || 0);
         }
         return 0;
       });
@@ -843,7 +1043,7 @@
         logsContainer.innerHTML = `
           <div class="empty-state">
             <span>📝</span>
-            <p>No records found. Click <b>+</b> to add your first entry!</p>
+            <p>No records found in this category.</p>
           </div>
         `;
         return;
@@ -898,7 +1098,6 @@
       return div.innerHTML;
     }
 
-    // Modal Details View
     function openDetail(log) {
       selectedLogId = log.id;
       detailContent.innerHTML = `
@@ -953,7 +1152,7 @@
     });
 
     // ==========================================
-    // SMART UNIVERSAL CSV EXPORT & IMPORT
+    // BULLETPROOF UNIVERSAL CSV IMPORT & EXPORT
     // ==========================================
 
     document.getElementById('exportBtn').addEventListener('click', () => {
@@ -990,8 +1189,11 @@
       localStorage.setItem('vehIQ_last_backup', new Date().toISOString());
     }
 
-    // Trigger Import File Dialog
-    document.getElementById('importBtn').addEventListener('click', () => fileInput.click());
+    // Trigger Android Native File Dialog
+    document.getElementById('importBtn').addEventListener('click', () => {
+      fileInput.value = '';
+      fileInput.click();
+    });
 
     fileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
@@ -1007,67 +1209,120 @@
         }
       };
       reader.readAsText(file);
-      fileInput.value = '';
     });
 
-    // Universal Flexible CSV Parser
+    // Advanced Multi-Delimiter & Fuzzy CSV Parser (Fixes other app imports)
     function parseUniversalCSV(text) {
-      const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
-      if (lines.length < 2) {
-        alert('CSV file is empty or missing headers.');
+      if (!text || !text.trim()) {
+        alert('Selected file is empty.');
         return;
       }
 
-      function parseCSVLine(line) {
-        const pattern = /(?:,|\n|^)("(?:(?:"")*[^"]*)*"|[^",\n]*|(?:\n|$))/g;
-        const matches = [];
-        let match;
-        while ((match = pattern.exec(line)) !== null && match.index < line.length) {
-          let val = match[1] || '';
-          if (val.startsWith('"') && val.endsWith('"')) {
-            val = val.slice(1, -1).replace(/""/g, '"');
-          }
-          matches.push(val.trim());
-          if (pattern.lastIndex === match.index) break;
-        }
-        return matches;
+      const rawLines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+      if (rawLines.length < 2) {
+        alert('File does not have enough rows or header information.');
+        return;
       }
 
-      const rawHeaders = parseCSVLine(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
+      // 1. Detect Delimiter (Comma, Semicolon, or Tab)
+      const firstLine = rawLines[0];
+      let delimiter = ',';
+      const commaCount = (firstLine.match(/,/g) || []).length;
+      const semiCount = (firstLine.match(/;/g) || []).length;
+      const tabCount = (firstLine.match(/\t/g) || []).length;
 
+      if (semiCount > commaCount && semiCount > tabCount) delimiter = ';';
+      else if (tabCount > commaCount && tabCount > semiCount) delimiter = '\t';
+
+      // 2. Parse Delimited Line with Quotes Support
+      function splitLine(line, delim) {
+        const result = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i];
+          if (ch === '"') {
+            if (inQuotes && line[i + 1] === '"') {
+              cur += '"';
+              i++;
+            } else {
+              inQuotes = !inQuotes;
+            }
+          } else if (ch === delim && !inQuotes) {
+            result.push(cur.trim());
+            cur = '';
+          } else {
+            cur += ch;
+          }
+        }
+        result.push(cur.trim());
+        return result;
+      }
+
+      const headers = splitLine(rawLines[0], delimiter).map(h => 
+        h.toLowerCase().replace(/[^a-z0-9]/g, '')
+      );
+
+      // 3. Map Header Columns dynamically
       const colMap = {
-        date: rawHeaders.findIndex(h => h.includes('date') || h.includes('time')),
-        odometer: rawHeaders.findIndex(h => h.includes('odo') || h.includes('reading') || h.includes('km')),
-        cost: rawHeaders.findIndex(h => h.includes('cost') || h.includes('price') || h.includes('amount') || h.includes('total')),
-        quantity: rawHeaders.findIndex(h => h.includes('qty') || h.includes('quantity') || h.includes('litre') || h.includes('liter') || h.includes('volume')),
-        rate: rawHeaders.findIndex(h => h.includes('rate') || h.includes('unitprice')),
-        notes: rawHeaders.findIndex(h => h.includes('note') || h.includes('remark') || h.includes('comment') || h.includes('desc')),
-        type: rawHeaders.findIndex(h => h.includes('type') || h.includes('logtype')),
-        category: rawHeaders.findIndex(h => h.includes('category') || h.includes('expense')),
-        fullTank: rawHeaders.findIndex(h => h.includes('full'))
+        date: headers.findIndex(h => h.includes('date') || h.includes('time')),
+        odometer: headers.findIndex(h => h.includes('odo') || h.includes('reading') || h.includes('km') || h.includes('mileage')),
+        cost: headers.findIndex(h => h.includes('cost') || h.includes('price') || h.includes('amount') || h.includes('total') || h.includes('spend')),
+        quantity: headers.findIndex(h => h.includes('qty') || h.includes('quantity') || h.includes('litre') || h.includes('liter') || h.includes('volume') || h.includes('gallons')),
+        rate: headers.findIndex(h => h.includes('rate') || h.includes('unitprice') || h.includes('priceper')),
+        notes: headers.findIndex(h => h.includes('note') || h.includes('remark') || h.includes('comment') || h.includes('desc')),
+        type: headers.findIndex(h => h.includes('type') || h.includes('logtype')),
+        category: headers.findIndex(h => h.includes('category') || h.includes('expense')),
+        fullTank: headers.findIndex(h => h.includes('full'))
       };
 
-      let newCount = 0;
-      for (let i = 1; i < lines.length; i++) {
-        const cols = parseCSVLine(lines[i]);
-        if (cols.length < 2) continue;
+      function cleanNumber(str) {
+        if (!str) return 0;
+        // Strip out currency signs (₹, $, €) and normalize European comma-decimal if needed
+        let clean = str.replace(/[₹$€,\s]/g, '').trim();
+        return parseFloat(clean) || 0;
+      }
 
-        let rawDate = colMap.date !== -1 ? cols[colMap.date] : new Date().toISOString().split('T')[0];
-        let formattedDate = standardizeDate(rawDate);
+      let importedCount = 0;
+      for (let i = 1; i < rawLines.length; i++) {
+        const row = splitLine(rawLines[i], delimiter);
+        if (row.length < 2) continue;
 
-        let odoVal = colMap.odometer !== -1 ? parseFloat(cols[colMap.odometer].replace(/[^0-9.]/g, '')) || 0 : 0;
-        let costVal = colMap.cost !== -1 ? parseFloat(cols[colMap.cost].replace(/[^0-9.]/g, '')) || 0 : 0;
-        let qtyVal = colMap.quantity !== -1 ? parseFloat(cols[colMap.quantity].replace(/[^0-9.]/g, '')) || 0 : 0;
-        let rateVal = colMap.rate !== -1 ? parseFloat(cols[colMap.rate].replace(/[^0-9.]/g, '')) || 0 : 0;
-        let notesVal = colMap.notes !== -1 ? cols[colMap.notes] || '' : '';
-        let typeVal = colMap.type !== -1 ? cols[colMap.type] : (qtyVal > 0 ? 'Fuel' : 'Expense');
-        let catVal = colMap.category !== -1 ? cols[colMap.category] : '';
-        let fullTankVal = colMap.fullTank !== -1 ? ['1', 'true', 'yes'].includes((cols[colMap.fullTank] || '').toLowerCase()) : true;
+        let rawDate = colMap.date !== -1 ? row[colMap.date] : '';
+        let formattedDate = parseFlexibleDate(rawDate);
 
-        if (costVal > 0 || odoVal > 0) {
+        let odoVal = colMap.odometer !== -1 ? cleanNumber(row[colMap.odometer]) : 0;
+        let costVal = colMap.cost !== -1 ? cleanNumber(row[colMap.cost]) : 0;
+        let qtyVal = colMap.quantity !== -1 ? cleanNumber(row[colMap.quantity]) : 0;
+        let rateVal = colMap.rate !== -1 ? cleanNumber(row[colMap.rate]) : 0;
+        let notesVal = colMap.notes !== -1 ? (row[colMap.notes] || '') : '';
+        let typeVal = colMap.type !== -1 ? (row[colMap.type] || '') : '';
+        let catVal = colMap.category !== -1 ? (row[colMap.category] || '') : '';
+        
+        let fullTankVal = true;
+        if (colMap.fullTank !== -1) {
+          const rawFt = (row[colMap.fullTank] || '').toLowerCase();
+          fullTankVal = ['1', 'true', 'yes', 'y'].includes(rawFt);
+        }
+
+        // Infer Type if missing
+        if (!['Fuel', 'Service', 'Expense'].includes(typeVal)) {
+          if (qtyVal > 0 || (costVal > 0 && odoVal > 0 && !catVal)) {
+            typeVal = 'Fuel';
+          } else {
+            typeVal = 'Expense';
+          }
+        }
+
+        // Auto calculate rate if cost & quantity available
+        if (costVal > 0 && qtyVal > 0 && rateVal === 0) {
+          rateVal = parseFloat((costVal / qtyVal).toFixed(2));
+        }
+
+        if (costVal > 0 || odoVal > 0 || qtyVal > 0) {
           logs.push({
             id: 'log_' + Date.now() + '_' + i,
-            type: ['Fuel', 'Service', 'Expense'].includes(typeVal) ? typeVal : 'Fuel',
+            type: typeVal,
             date: formattedDate,
             odometer: odoVal,
             cost: costVal,
@@ -1077,42 +1332,61 @@
             fullTank: fullTankVal,
             notes: notesVal
           });
-          newCount++;
+          importedCount++;
         }
       }
 
       saveData();
       renderLogs();
       calculateMetrics();
-      alert(`Success! Imported ${newCount} entries.`);
+      alert(`Success! Successfully imported ${importedCount} entries.`);
     }
 
-    function standardizeDate(d) {
+    // Flexible Date Parser (handles YYYY-MM-DD, DD/MM/YYYY, DD.MM.YYYY, MM/DD/YYYY)
+    function parseFlexibleDate(d) {
       if (!d) return new Date().toISOString().split('T')[0];
-      d = d.trim();
-      if (/^\d{4}-\d{2}-\d{2}/.test(d)) return d.slice(0, 10);
-      if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(d)) {
-        const pts = d.split('/');
+      d = d.trim().split(' ')[0]; // remove time component if any
+      
+      // YYYY-MM-DD or YYYY/MM/DD
+      if (/^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}/.test(d)) {
+        const pts = d.split(/[-/.]/);
+        return `${pts[0]}-${pts[1].padStart(2, '0')}-${pts[2].padStart(2, '0')}`;
+      }
+      
+      // DD/MM/YYYY or DD.MM.YYYY
+      if (/^\d{1,2}[-/.]\d{1,2}[-/.]\d{4}/.test(d)) {
+        const pts = d.split(/[-/.]/);
         return `${pts[2]}-${pts[1].padStart(2, '0')}-${pts[0].padStart(2, '0')}`;
       }
+
       return new Date().toISOString().split('T')[0];
     }
 
-    // Auto-Backup Handler
+    // Auto Backup Selector Setup
     const backupBtn = document.getElementById('backupBtn');
-    const autoBackupInterval = document.getElementById('autoBackupInterval');
     const lastBackupDisplay = document.getElementById('lastBackupDisplay');
+    let chosenBackupInterval = localStorage.getItem('vehIQ_backup_interval') || '0';
 
     backupBtn.addEventListener('click', () => {
-      const savedInterval = localStorage.getItem('vehIQ_backup_interval') || '0';
-      autoBackupInterval.value = savedInterval;
+      chosenBackupInterval = localStorage.getItem('vehIQ_backup_interval') || '0';
+      document.querySelectorAll('#backupIntervalGroup .segmented-btn').forEach(b => {
+        b.classList.toggle('selected', b.getAttribute('data-val') === chosenBackupInterval);
+      });
       const last = localStorage.getItem('vehIQ_last_backup');
       lastBackupDisplay.textContent = last ? new Date(last).toLocaleDateString() : 'Never';
       backupModal.classList.add('open');
     });
 
+    document.querySelectorAll('#backupIntervalGroup .segmented-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#backupIntervalGroup .segmented-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        chosenBackupInterval = btn.getAttribute('data-val');
+      });
+    });
+
     document.getElementById('saveBackupSettings').addEventListener('click', () => {
-      localStorage.setItem('vehIQ_backup_interval', autoBackupInterval.value);
+      localStorage.setItem('vehIQ_backup_interval', chosenBackupInterval);
       backupModal.classList.remove('open');
       alert('Backup preference saved.');
     });
@@ -1130,12 +1404,12 @@
       }
     }
 
-    // Initial Trigger
+    // Init
+    updateQuickAddUI();
     renderLogs();
     calculateMetrics();
     checkAutoBackup();
 
-    // Offline Service Worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});
     }

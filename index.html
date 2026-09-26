@@ -923,8 +923,10 @@
 
     logForm.addEventListener('submit', (e) => {
       e.preventDefault();
+      const now = Date.now();
       const newEntry = {
-        id: 'log_' + Date.now(),
+        id: 'log_' + now,
+        createdAt: now,
         type: currentSelectedType,
         date: document.getElementById('logDate').value,
         odometer: parseFloat(document.getElementById('logOdo').value) || 0,
@@ -1008,18 +1010,31 @@
       let filtered = logs.filter(l => currentFilter === 'all' || l.type === currentFilter);
 
       filtered.sort((a, b) => {
+        const timeA = new Date(a.date).getTime() || 0;
+        const timeB = new Date(b.date).getTime() || 0;
+        const createdA = a.createdAt || parseInt(String(a.id).replace(/\D/g, '')) || 0;
+        const createdB = b.createdAt || parseInt(String(b.id).replace(/\D/g, '')) || 0;
+        const odoA = parseFloat(a.odometer) || 0;
+        const odoB = parseFloat(b.odometer) || 0;
+        const costA = parseFloat(a.cost) || 0;
+        const costB = parseFloat(b.cost) || 0;
+
         if (currentSort === 'date-desc') {
-          return new Date(b.date) - new Date(a.date) || (b.odometer || 0) - (a.odometer || 0);
+          if (timeB !== timeA) return timeB - timeA;
+          if (odoB !== odoA && odoA > 0 && odoB > 0) return odoB - odoA;
+          return createdB - createdA;
         } else if (currentSort === 'date-asc') {
-          return new Date(a.date) - new Date(b.date) || (a.odometer || 0) - (b.odometer || 0);
+          if (timeA !== timeB) return timeA - timeB;
+          if (odoA !== odoB && odoA > 0 && odoB > 0) return odoA - odoB;
+          return createdA - createdB;
         } else if (currentSort === 'odo-desc') {
-          return (b.odometer || 0) - (a.odometer || 0);
+          return odoB - odoA;
         } else if (currentSort === 'odo-asc') {
-          return (a.odometer || 0) - (b.odometer || 0);
+          return odoA - odoB;
         } else if (currentSort === 'cost-desc') {
-          return (b.cost || 0) - (a.cost || 0);
+          return costB - costA;
         } else if (currentSort === 'cost-asc') {
-          return (a.cost || 0) - (b.cost || 0);
+          return costA - costB;
         }
         return 0;
       });
@@ -1230,6 +1245,7 @@
       let currentSection = 'FUEL';
       let sectionHeaders = [];
       let importedCount = 0;
+      const baseTime = Date.now();
 
       for (let i = 0; i < rawLines.length; i++) {
         const line = rawLines[i];
@@ -1289,7 +1305,8 @@
 
         if (rowCost > 0 || rowOdo > 0 || rowQty > 0) {
           logs.push({
-            id: 'log_' + Date.now() + '_' + i,
+            id: 'log_' + (baseTime + i),
+            createdAt: baseTime + i,
             type: currentSection === 'SERVICE' ? 'Service' : (currentSection === 'EXPENSE' ? 'Expense' : 'Fuel'),
             date: rowDate,
             odometer: rowOdo,
@@ -1353,7 +1370,7 @@
     document.getElementById('saveBackupSettings').addEventListener('click', () => {
       localStorage.setItem('vehIQ_backup_interval', chosenBackupInterval);
       backupModal.classList.remove('open');
-      alert('Backup setting saved.');
+      alert('Backup preference saved.');
     });
 
     function checkAutoBackup() {
